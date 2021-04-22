@@ -66,9 +66,9 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
   size_t i;
   for ( i = 0; i < 64; i++)
   {
-      LOG_INFO("Received message %u from address ", payload[i] );
+      LOG_INFO("Received message %u \n ", payload[i] );
   }
-  
+  LOG_INFO(" from address ");
   LOG_INFO_LLADDR(src);
   LOG_INFO(" sent to ");
   LOG_INFO_LLADDR(dest);

@@ -25,9 +25,15 @@
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
 {
-  unsigned count;
-  memcpy(&count, data, sizeof(count));
-  LOG_INFO("Received message %u from address ", count );
+  uint8_t payload[64];
+  memcpy(&payload, data, sizeof(payload));
+  size_t i;
+  for (i = 0; i < payload; i++)
+  {
+      LOG_INFO("Received message %u \n", payload[i] );
+  }
+  
+  LOG_INFO(" from address " );
   LOG_INFO_LLADDR(src);
   LOG_INFO_(" sent to ");
   LOG_INFO_LLADDR(dest);
