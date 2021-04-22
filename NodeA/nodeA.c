@@ -79,7 +79,7 @@ PROCESS_THREAD(nodeA, ev, data)
 {
   static struct etimer periodic_timer;
 
-  uint8_t payload[64] = {33};
+  uint8_t payload[64] = {33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33};
   nullnet_buf = (uint8_t *)&payload;
   nullnet_len = sizeof(payload);
   nullnet_set_input_callback(input_callback);
@@ -97,9 +97,11 @@ PROCESS_THREAD(nodeA, ev, data)
         etimer_reset(&periodic_timer);
 
         NETSTACK_NETWORK.output(&addr_nodeB);
-
-        printf("sending message: %u\n", payload);
-        LOG_INFO("TEST\n");
+        size_t i;
+        for ( i = 0; i < 64; i++)
+        {
+          LOG_INFO("Received message %u \n ", payload[i] );
+        }
         LOG_INFO_LLADDR(&addr_nodeB);
     }
  
