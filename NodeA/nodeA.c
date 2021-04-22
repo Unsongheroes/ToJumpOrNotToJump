@@ -61,9 +61,14 @@ int findBestChannel() {
 
 void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
 {
-  unsigned count;
-  memcpy(&count, data, sizeof(count));
-  LOG_INFO("Received message %u from address ", count );
+  uint8_t payload[64];
+  memcpy(&payload, data, sizeof(payload));
+  size_t i;
+  for ( i = 0; i < 64; i++)
+  {
+      LOG_INFO("Received message %u from address ", payload[i] );
+  }
+  
   LOG_INFO_LLADDR(src);
   LOG_INFO(" sent to ");
   LOG_INFO_LLADDR(dest);
@@ -74,10 +79,9 @@ PROCESS_THREAD(nodeA, ev, data)
 {
   static struct etimer periodic_timer;
 
-  static unsigned count = 0;
-
-  nullnet_buf = (uint8_t *)&count;
-  nullnet_len = sizeof(count);
+  uint8_t payload[64] = {33};
+  nullnet_buf = (uint8_t *)&payload;
+  nullnet_len = sizeof(payload);
   nullnet_set_input_callback(input_callback);
     
   PROCESS_BEGIN();
@@ -94,7 +98,7 @@ PROCESS_THREAD(nodeA, ev, data)
 
         NETSTACK_NETWORK.output(&addr_nodeB);
 
-        printf("sending message: %u\n", count++);
+        printf("sending message: %u\n", payload);
         LOG_INFO("TEST\n");
         LOG_INFO_LLADDR(&addr_nodeB);
     }
