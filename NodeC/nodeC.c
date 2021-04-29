@@ -48,6 +48,14 @@ void printPayload(JumpPackage payload) {
   }
 }
 
+void sendAck(const linkaddr_t *src) {
+  uint8_t acknowledge = 1;
+  nullnet_buf = (uint8_t *)&acknowledge;
+  nullnet_len = sizeof(acknowledge);
+  NETSTACK_NETWORK.output(src);
+  LOG_INFO("Acknowledge sent!\n");
+}
+
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
 {
@@ -60,6 +68,7 @@ void input_callback(const void *data, uint16_t len,
   printReceiver(payload);
   printPayload(payload);
 
+  sendAck(src);
 }
 
 /*---------------------------------------------------------------------------*/
