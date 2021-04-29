@@ -8,6 +8,7 @@ typedef struct JumpPackage {
    linkaddr_t sender;
    linkaddr_t destination;
    uint8_t payload[64]; 
+
 } JumpPackage;
 
 #endif 

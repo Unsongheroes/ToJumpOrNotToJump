@@ -60,6 +60,21 @@ void sendAck(const linkaddr_t *src) {
 }
 
 /* ----------------------------- Helper ----------------------------------- */
+/* ----------------------------- Callbacks ----------------------------------- */
+void ack_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest) {
+  uint8_t ack;
+
+  memcpy(&ack, data, sizeof(ack));
+
+  if (ack == 1) {
+    
+    LOG_INFO("Acknowledged received from: ");
+    LOG_INFO_LLADDR(src);
+    LOG_INFO_("\n");
+    
+    sendAck(&addr_Sender);
+  }
+}
 
 void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
 {
@@ -72,7 +87,7 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
   printSender(payload);
   printReceiver(payload);
   printPayload(payload);
-  sendAck(src);
+
   /*
     LOG_INFO(" from address ");
     LOG_INFO_LLADDR(src);
@@ -80,23 +95,14 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
     LOG_INFO_LLADDR(dest);
     LOG_INFO("\n");
   */
-  NETSTACK_NETWORK.output(&addr_nodeC);
   addr_Sender = *src;
+  NETSTACK_NETWORK.output(&addr_nodeC);
+  
   nullnet_set_input_callback(ack_callback);
 }
 
-void ack_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest) {
-  uint8_t ack;
+/* ----------------------------- Callbacks ----------------------------------- */
 
-  memcpy(&ack, data, sizeof(ack));
-
-  if (ack == 1) {
-    sendAck(&addr_Sender);
-    LOG_INFO("Acknowledged received from: ");
-    LOG_INFO_LLADDR(src);
-    LOG_INFO_("\n");
-  }
-}
 
 PROCESS_THREAD(nodeB, ev, data)
 {
