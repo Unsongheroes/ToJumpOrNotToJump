@@ -19,6 +19,7 @@ static linkaddr_t addr_nodeB =     {{0xe3, 0xfd, 0x6e, 0x14, 0x00, 0x74, 0x12, 0
 //static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 //static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
 
+static bool Acknowledged = 0;
 /* -----------------------------         ----------------------------------- */
 PROCESS(nodeA, "Node A - Sender");
 AUTOSTART_PROCESSES(&nodeA);
@@ -61,22 +62,16 @@ int findBestChannel() {
 
 void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
 {
-  JumpPackage payload;
+  uint8_t ack;
 
-  memcpy(&payload, data, sizeof(payload));
-  size_t i;
-  for ( i = 0; i < 64; i++)
-  {
-      if(payload.payload[i]==0) {
-        break;
-      }
-      LOG_INFO("Received message %u \n ", payload.payload[i] );
+  memcpy(&ack, data, sizeof(ack));
+
+  if (ack == 1) {
+    Acknowledged = 1;
+    LOG_INFO("Acknowledged received from: ");
+    LOG_INFO_LLADDR(src);
+    LOG_INFO_("\n");
   }
-  LOG_INFO(" from address ");
-  LOG_INFO_LLADDR(src);
-  LOG_INFO(" sent to ");
-  LOG_INFO_LLADDR(dest);
-  LOG_INFO("\n");
 }
 
 PROCESS_THREAD(nodeA, ev, data)
@@ -96,21 +91,23 @@ PROCESS_THREAD(nodeA, ev, data)
   SENSORS_ACTIVATE(button_sensor);
     while (1)
     {
-        nullnet_set_input_callback(input_callback);
+//        nullnet_set_input_callback(input_callback);
 
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer)); 	// Wait until time is expired
         etimer_reset(&periodic_timer);
-
-        NETSTACK_NETWORK.output(&addr_nodeB);
-        size_t i;
-        for ( i = 0; i < 64; i++)
-        {
-          if(payload.payload[i]==0) {
-          break;
-          }
-          LOG_INFO("Sent message %u \n ", payload.payload[i] );
+        if(!Acknowledged ) {
+          NETSTACK_NETWORK.output(&addr_nodeB);
+          size_t i;
+          for ( i = 0; i < 64; i++)
+          {
+            if(payload.payload[i]==0) {
+            break;
+            }
+            LOG_INFO("Sent message %u \n ", payload.payload[i] );
+          }  
+        } else {
+          LOG_INFO("Message delivered!\n");
         }
-        LOG_INFO_LLADDR(&addr_nodeB);
     }
  
   PROCESS_END();

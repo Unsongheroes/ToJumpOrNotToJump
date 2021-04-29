@@ -50,6 +50,15 @@ void printPayload(JumpPackage payload) {
   }
 }
 
+void sendAck(const linkaddr_t *src) {
+  uint8_t acknowledge = 1;
+  nullnet_buf = (uint8_t *)&acknowledge;
+  nullnet_len = sizeof(acknowledge);
+  NETSTACK_NETWORK.output(src);
+}
+
+/* ----------------------------- Helper ----------------------------------- */
+
 void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
 {
 
@@ -61,13 +70,14 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
   printSender(payload);
   printReceiver(payload);
   printPayload(payload);
+  sendAck(src);
   /*
-  LOG_INFO(" from address ");
-  LOG_INFO_LLADDR(src);
-  LOG_INFO(" sent to ");
-  LOG_INFO_LLADDR(dest);
-  LOG_INFO("\n");
-*/
+    LOG_INFO(" from address ");
+    LOG_INFO_LLADDR(src);
+    LOG_INFO(" sent to ");
+    LOG_INFO_LLADDR(dest);
+    LOG_INFO("\n");
+  */
   NETSTACK_NETWORK.output(&addr_nodeC);
   
 }
@@ -92,9 +102,6 @@ PROCESS_THREAD(nodeB, ev, data)
 
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer)); 	// Wait until time is expired
         etimer_reset(&periodic_timer);
-
- 
-        printf("pulsing - \n");
 
     }
  
