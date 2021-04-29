@@ -67,6 +67,9 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
   size_t i;
   for ( i = 0; i < 64; i++)
   {
+      if(payload.payload[i]==0) {
+        break;
+      }
       LOG_INFO("Received message %u \n ", payload.payload[i] );
   }
   LOG_INFO(" from address ");
@@ -80,7 +83,7 @@ PROCESS_THREAD(nodeA, ev, data)
 {
   static struct etimer periodic_timer;
 
-  JumpPackage payload = {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00},{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00},{33}};
+  JumpPackage payload = {{{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}},{{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}},{33}};
   nullnet_buf = (uint8_t *)&payload;
 
   nullnet_len = sizeof(payload);
@@ -102,7 +105,10 @@ PROCESS_THREAD(nodeA, ev, data)
         size_t i;
         for ( i = 0; i < 64; i++)
         {
-          LOG_INFO("Received message %u \n ", payload.payload[i] );
+          if(payload.payload[i]==0) {
+          break;
+          }
+          LOG_INFO("Sent message %u \n ", payload.payload[i] );
         }
         LOG_INFO_LLADDR(&addr_nodeB);
     }

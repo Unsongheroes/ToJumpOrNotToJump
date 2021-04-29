@@ -33,6 +33,9 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
   size_t i;
   for ( i = 0; i < 64; i++)
   {
+    if (payload.payload[i] ==0) {
+      break;
+    }
       LOG_INFO("Received message %u \n", payload.payload[i] );
   }
   LOG_INFO(" from address ");
@@ -44,7 +47,10 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
   NETSTACK_NETWORK.output(&addr_nodeC);
   for ( i = 0; i < 64; i++)
   {
-      LOG_INFO("Received message %u to node C \n", payload.payload[i] );
+    if (payload.payload[i] ==0) {
+      break;
+    }
+    LOG_INFO("Received message %u to node C \n", payload.payload[i] );
   }
 }
 
