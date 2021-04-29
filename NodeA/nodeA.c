@@ -63,7 +63,7 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
 {
   JumpPackage payload;
 
-  memcpy(&payload.payload, data, sizeof(payload));
+  memcpy(&payload.payload, data, sizeof(payload.payload));
   size_t i;
   for ( i = 0; i < 64; i++)
   {

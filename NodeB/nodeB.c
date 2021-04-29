@@ -1,10 +1,9 @@
 /// Node B receiver node
-#include "contiki.h"
+#include "JumpHeader.h"
 #include "cc2420.h"
 
 #include "dev/button-sensor.h"
 
-#include "net/nullnet/nullnet.h"
 #include "net/netstack.h"
 #include <string.h>
 #include <stdio.h>
@@ -18,7 +17,7 @@
 #define SEND_INTERVAL (3 * CLOCK_SECOND)
 //static linkaddr_t addr_nodeB =     {{0x77, 0xb7, 0x7b, 0x11, 0x0, 0x74, 0x12, 0x00 }};
 static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
-
+//static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
 /* -----------------------------         ----------------------------------- */
 PROCESS(nodeB, "Node B - Sender");
 AUTOSTART_PROCESSES(&nodeB);
@@ -27,14 +26,14 @@ AUTOSTART_PROCESSES(&nodeB);
 void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
 {
 
-  uint8_t payload[64];
-  memcpy(&payload, data, sizeof(payload));
+  JumpPackage payload;
+  memcpy(&payload.payload, data, sizeof(payload.payload));
   nullnet_buf = (uint8_t *)&payload;
   nullnet_len = sizeof(payload);
   size_t i;
   for ( i = 0; i < 64; i++)
   {
-      LOG_INFO("Received message %u \n", payload[i] );
+      LOG_INFO("Received message %u \n", payload.payload[i] );
   }
   LOG_INFO(" from address ");
   LOG_INFO_LLADDR(src);
@@ -45,7 +44,7 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
   NETSTACK_NETWORK.output(&addr_nodeC);
   for ( i = 0; i < 64; i++)
   {
-      LOG_INFO("Received message %u to node C \n", payload[i] );
+      LOG_INFO("Received message %u to node C \n", payload.payload[i] );
   }
 }
 
@@ -53,8 +52,8 @@ PROCESS_THREAD(nodeB, ev, data)
 {
   static struct etimer periodic_timer;
 
-  uint8_t payload[64];
-  nullnet_buf = (uint8_t *)&payload;
+  JumpPackage payload;
+  nullnet_buf = (JumpPackage *)&payload;
   nullnet_len = sizeof(payload);
   nullnet_set_input_callback(input_callback);
     
