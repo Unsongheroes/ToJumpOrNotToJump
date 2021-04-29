@@ -11,6 +11,7 @@
 #include "dev/button-sensor.h"
 #include "net/nullnet/nullnet.h"
 #include "net/netstack.h"
+#include "JumpHeader.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,24 +21,44 @@
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_INFO
 
-#define SEND_INTERVAL (3 * CLOCK_SECOND)
+void printSender(JumpPackage payload ) {
+  LOG_INFO("Sender: " );
+  linkaddr_t* sender = &payload.sender;
+  LOG_INFO_LLADDR(sender);
+  LOG_INFO("\n " );
+  
+}
+
+void printReceiver(JumpPackage payload ) {
+  LOG_INFO("Destination: " );
+  linkaddr_t* destination = &payload.destination;
+  LOG_INFO_LLADDR(destination);
+  LOG_INFO("\n " );
+  
+}
+
+void printPayload(JumpPackage payload) {
+  size_t i;
+  for ( i = 0; i < 64; i++)
+  {
+    if (payload.payload[i] ==0) {
+      break;
+    }
+      LOG_INFO("Received message %u \n", payload.payload[i] );
+  }
+}
 
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
 {
-  uint8_t payload[64];
+  JumpPackage payload;
   memcpy(&payload, data, sizeof(payload));
-  size_t i;
-  for (i = 0; i < payload; i++)
-  {
-      LOG_INFO("Received message %u \n", payload[i] );
-  }
+  nullnet_buf = (uint8_t *)&payload;
+  nullnet_len = sizeof(payload);
   
-  LOG_INFO(" from address " );
-  LOG_INFO_LLADDR(src);
-  LOG_INFO_(" sent to ");
-  LOG_INFO_LLADDR(dest);
-  LOG_INFO_("\n");
+  printSender(payload);
+  printReceiver(payload);
+  printPayload(payload);
 
 }
 
@@ -48,15 +69,14 @@ AUTOSTART_PROCESSES(&main_process);
 
 PROCESS_THREAD(main_process, ev, data)
 {
+  nullnet_set_input_callback(input_callback);
 
   PROCESS_BEGIN();
+  printf("STARTING NODE C,,, \n");
 
   SENSORS_ACTIVATE(button_sensor);
 
   while(1){
-
-    nullnet_set_input_callback(input_callback);
-
     PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
     printf("hey");
   }
