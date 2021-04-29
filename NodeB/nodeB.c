@@ -18,6 +18,7 @@
 //static linkaddr_t addr_nodeB =     {{0x77, 0xb7, 0x7b, 0x11, 0x0, 0x74, 0x12, 0x00 }};
 static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 //static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
+static linkaddr_t addr_Sender;
 /* -----------------------------         ----------------------------------- */
 PROCESS(nodeB, "Node B - Sender");
 AUTOSTART_PROCESSES(&nodeB);
@@ -55,6 +56,7 @@ void sendAck(const linkaddr_t *src) {
   nullnet_buf = (uint8_t *)&acknowledge;
   nullnet_len = sizeof(acknowledge);
   NETSTACK_NETWORK.output(src);
+  LOG_INFO("Acknowledge sent!\n");
 }
 
 /* ----------------------------- Helper ----------------------------------- */
@@ -79,7 +81,21 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
     LOG_INFO("\n");
   */
   NETSTACK_NETWORK.output(&addr_nodeC);
-  
+  addr_Sender = *src;
+  nullnet_set_input_callback(ack_callback);
+}
+
+void ack_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest) {
+  uint8_t ack;
+
+  memcpy(&ack, data, sizeof(ack));
+
+  if (ack == 1) {
+    sendAck(&addr_Sender);
+    LOG_INFO("Acknowledged received from: ");
+    LOG_INFO_LLADDR(src);
+    LOG_INFO_("\n");
+  }
 }
 
 PROCESS_THREAD(nodeB, ev, data)
