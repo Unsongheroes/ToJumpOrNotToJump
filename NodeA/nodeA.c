@@ -5,6 +5,7 @@
 #include "dev/button-sensor.h"
 
 #include "net/netstack.h"
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -96,6 +97,8 @@ PROCESS_THREAD(nodeA, ev, data)
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer)); 	// Wait until time is expired
         etimer_reset(&periodic_timer);
         if(!Acknowledged ) {
+          
+
           NETSTACK_NETWORK.output(&addr_nodeB);
           size_t i;
           for ( i = 0; i < 64; i++)
@@ -107,6 +110,8 @@ PROCESS_THREAD(nodeA, ev, data)
           }  
         } else {
           LOG_INFO("Message delivered!\n");
+          PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
+          Acknowledged = 0;
         }
     }
  
