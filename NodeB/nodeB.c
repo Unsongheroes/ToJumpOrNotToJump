@@ -23,13 +23,23 @@ PROCESS(nodeB, "Node B - Sender");
 AUTOSTART_PROCESSES(&nodeB);
 /* ----------------------------- Helper ----------------------------------- */
 
-void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
-{
+void printSender(JumpPackage payload ) {
+  LOG_INFO("Sender: " );
+  linkaddr_t* sender = &payload.sender;
+  LOG_INFO_LLADDR(sender);
+  LOG_INFO("\n " );
+  
+}
 
-  JumpPackage payload;
-  memcpy(&payload.payload, data, sizeof(payload.payload));
-  nullnet_buf = (uint8_t *)&payload;
-  nullnet_len = sizeof(payload);
+void printReceiver(JumpPackage payload ) {
+  LOG_INFO("Destination: " );
+  linkaddr_t* destination = &payload.destination;
+  LOG_INFO_LLADDR(destination);
+  LOG_INFO("\n " );
+  
+}
+
+void printPayload(JumpPackage payload) {
   size_t i;
   for ( i = 0; i < 64; i++)
   {
@@ -38,20 +48,28 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
     }
       LOG_INFO("Received message %u \n", payload.payload[i] );
   }
+}
+
+void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
+{
+
+  JumpPackage payload;
+  memcpy(&payload, data, sizeof(payload));
+  nullnet_buf = (uint8_t *)&payload;
+  nullnet_len = sizeof(payload);
+  
+  printSender(payload);
+  printReceiver(payload);
+  printPayload(payload);
+  /*
   LOG_INFO(" from address ");
   LOG_INFO_LLADDR(src);
   LOG_INFO(" sent to ");
   LOG_INFO_LLADDR(dest);
   LOG_INFO("\n");
-
+*/
   NETSTACK_NETWORK.output(&addr_nodeC);
-  for ( i = 0; i < 64; i++)
-  {
-    if (payload.payload[i] ==0) {
-      break;
-    }
-    LOG_INFO("Received message %u to node C \n", payload.payload[i] );
-  }
+  
 }
 
 PROCESS_THREAD(nodeB, ev, data)
