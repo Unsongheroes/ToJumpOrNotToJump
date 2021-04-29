@@ -9,7 +9,7 @@ typedef struct JumpPackage {
    linkaddr_t destination;
    uint8_t payload[64]; 
    int checksum; 
-   size_t length;
+   int length;
 } JumpPackage;
 
 #endif 
