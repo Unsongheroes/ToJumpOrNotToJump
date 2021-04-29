@@ -53,7 +53,7 @@ PROCESS_THREAD(nodeB, ev, data)
   static struct etimer periodic_timer;
 
   JumpPackage payload;
-  nullnet_buf = (JumpPackage *)&payload;
+  nullnet_buf = (uint8_t *)&payload;
   nullnet_len = sizeof(payload);
   nullnet_set_input_callback(input_callback);
     
