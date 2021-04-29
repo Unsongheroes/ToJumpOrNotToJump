@@ -23,7 +23,24 @@ static linkaddr_t addr_Sender;
 PROCESS(nodeB, "Node B - Sender");
 AUTOSTART_PROCESSES(&nodeB);
 /* ----------------------------- Helper ----------------------------------- */
-
+int checksum(uint8_t* buffer, size_t len)
+{
+      size_t i;
+      int checksum = 0;
+      /*
+      linkaddr_t* sender = &buffer.sender;
+      linkaddr_t* destination = &buffer.destination;
+       for (i = 0; i < 8; i++)
+      {
+        checksum += sender[i];
+        checksum += destination[i];
+      } */
+      for (i = 0; i < len; ++i) {
+        checksum += buffer[i];
+      }
+            
+      return checksum;
+}
 void printSender(JumpPackage payload ) {
   LOG_INFO("Sender: " );
   linkaddr_t* sender = &payload.sender;

@@ -20,7 +20,24 @@
 #include "sys/log.h"
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_INFO
-
+int checksum(uint8_t* buffer, size_t len)
+{
+      size_t i;
+      int checksum = 0;
+      /*
+      linkaddr_t* sender = &buffer.sender;
+      linkaddr_t* destination = &buffer.destination;
+       for (i = 0; i < 8; i++)
+      {
+        checksum += sender[i];
+        checksum += destination[i];
+      } */
+      for (i = 0; i < len; ++i) {
+        checksum += buffer[i];
+      }
+            
+      return checksum;
+}
 void printSender(JumpPackage payload ) {
   LOG_INFO("Sender: " );
   linkaddr_t* sender = &payload.sender;
@@ -71,8 +88,10 @@ void input_callback(const void *data, uint16_t len,
   printSender(payload);
   printReceiver(payload);
   printPayload(payload);
+  if (checksum(payload.payload,payload.length) == payload.checksum) {
+      sendAck(src);
 
-  sendAck(src);
+  }
 
 }
 

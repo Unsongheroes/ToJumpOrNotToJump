@@ -25,6 +25,24 @@ static bool Acknowledged = 0;
 PROCESS(nodeA, "Node A - Sender");
 AUTOSTART_PROCESSES(&nodeA);
 /* ----------------------------- Helper ----------------------------------- */
+int checksum(uint8_t* buffer, size_t len)
+{
+      size_t i;
+      int checksum = 0;
+      /*
+      linkaddr_t* sender = &buffer.sender;
+      linkaddr_t* destination = &buffer.destination;
+       for (i = 0; i < 8; i++)
+      {
+        checksum += sender[i];
+        checksum += destination[i];
+      } */
+      for (i = 0; i < len; ++i) {
+        checksum += buffer[i];
+      }
+            
+      return checksum;
+}
 
 int findBestChannel() {
     
@@ -79,7 +97,8 @@ PROCESS_THREAD(nodeA, ev, data)
 {
   static struct etimer periodic_timer;
 
-  JumpPackage payload = {{{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}},{{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}},{33}};
+  uint8_t payloadData[64] = {1,2,3,4,5,6,7};
+  JumpPackage payload = {{{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}},{{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}},payloadData,checksum(payloadData,7),7};
   nullnet_buf = (uint8_t *)&payload;
 
   nullnet_len = sizeof(payload);
