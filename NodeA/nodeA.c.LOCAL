@@ -82,12 +82,11 @@ PROCESS_THREAD(nodeA, ev, data)
 
   JumpPackage payload[64] = {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00},{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00},{33}};
   nullnet_buf = (JumpPackage *)&payload;
-
   nullnet_len = sizeof(payload);
   nullnet_set_input_callback(input_callback);
     
   PROCESS_BEGIN();
-    printf("STARTING NODE A,,, \n");  
+    printf("STARTING NODE A,,, \n");
     etimer_set(&periodic_timer, SEND_INTERVAL);
 
   SENSORS_ACTIVATE(button_sensor);
@@ -99,11 +98,9 @@ PROCESS_THREAD(nodeA, ev, data)
         etimer_reset(&periodic_timer);
 
         NETSTACK_NETWORK.output(&addr_nodeB);
-        size_t i;
-        for ( i = 0; i < 64; i++)
-        {
-          LOG_INFO("Received message %u \n ", payload[i] );
-        }
+
+        printf("sending message: %u\n", payload);
+        LOG_INFO("TEST\n");
         LOG_INFO_LLADDR(&addr_nodeB);
     }
  
