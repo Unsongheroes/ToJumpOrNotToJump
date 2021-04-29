@@ -52,7 +52,11 @@ void sendAck(const linkaddr_t *src) {
   uint8_t acknowledge = 1;
   nullnet_buf = (uint8_t *)&acknowledge;
   nullnet_len = sizeof(acknowledge);
-  NETSTACK_NETWORK.output(src);
+  LOG_INFO("\n");
+  LOG_INFO_LLADDR(src);
+  LOG_INFO("\n");
+  linkaddr_t tmp = *src;
+  NETSTACK_NETWORK.output(&tmp);
   LOG_INFO("Acknowledge sent!\n");
 }
 
@@ -69,6 +73,7 @@ void input_callback(const void *data, uint16_t len,
   printPayload(payload);
 
   sendAck(src);
+
 }
 
 /*---------------------------------------------------------------------------*/
