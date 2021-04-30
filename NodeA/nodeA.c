@@ -30,7 +30,7 @@ AUTOSTART_PROCESSES(&nodeA);
 int checksum(uint8_t* buffer, size_t len)
 {
       size_t i;
-      int checksum = 30;
+      int checksum = 0;
       /*
       linkaddr_t* sender = &buffer.sender;
       linkaddr_t* destination = &buffer.destination;
