@@ -30,7 +30,7 @@ AUTOSTART_PROCESSES(&nodeA);
 int checksum(uint8_t* buffer, size_t len)
 {
       size_t i;
-      int checksum = 0;
+      int checksum = 30;
       /*
       linkaddr_t* sender = &buffer.sender;
       linkaddr_t* destination = &buffer.destination;
@@ -46,11 +46,17 @@ int checksum(uint8_t* buffer, size_t len)
       return checksum;
 }
 
-void Radio_signal_strength(JumpPackage payload)
+void Radio_signal_strength( const linkaddr_t *src)
 {
   static signed char rss;
-  printf("Got message from %d\n",payload.sender);
-  rss = cc2420_rssi();
+  static signed char rss_val;
+  static signed char rss_offset;
+  printf("Got message from: ");
+  LOG_INFO_LLADDR(src);
+  printf("\n");
+  rss_val = cc2420_last_rssi;
+  rss_offset=-45;
+  rss=rss_val + rss_offset;
   printf("RSSI of Last Packet Received is %d\n",rss);
 }
 
@@ -94,10 +100,14 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
   uint8_t ack;
 
   memcpy(&ack, data, sizeof(ack));
-
+  Radio_signal_strength(src);
   if (ack == 1) {
     Acknowledged = 1;
     LOG_INFO("Acknowledged received from: ");
+    LOG_INFO_LLADDR(src);
+    LOG_INFO_("\n");
+  } else if (ack == 0) {
+    LOG_INFO("Not acknowledged received from: ");
     LOG_INFO_LLADDR(src);
     LOG_INFO_("\n");
   }
