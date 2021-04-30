@@ -113,6 +113,12 @@ void ack_callback(const void *data, uint16_t len, const linkaddr_t *src, const l
     LOG_INFO_("\n");
     
     sendAck(&addr_Sender);
+  } else {
+    LOG_INFO("Not acknowledged received from: ");
+    LOG_INFO_LLADDR(src);
+    LOG_INFO_("\n");
+    
+    sendNack(&addr_Sender);
   }
 }
 
@@ -128,6 +134,7 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
   printReceiver(payload);
   printPayload(payload);
   
+  
   /*
     LOG_INFO(" from address ");
     LOG_INFO_LLADDR(src);
@@ -135,13 +142,13 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
     LOG_INFO_LLADDR(dest);
     LOG_INFO("\n");
   */
+
   addr_Sender = *src;
   if(!checkChecksum(payload)){
     sendNack(&addr_Sender);
   } else {
-  NETSTACK_NETWORK.output(&addr_nodeC);
-  
-  nullnet_set_input_callback(ack_callback);
+    NETSTACK_NETWORK.output(&addr_nodeC);
+    nullnet_set_input_callback(ack_callback);
   }
   
 }
