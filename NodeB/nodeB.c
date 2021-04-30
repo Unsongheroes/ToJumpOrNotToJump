@@ -41,6 +41,22 @@ int checksum(uint8_t* buffer, size_t len)
             
       return checksum;
 }
+
+void checkChecksum(JumpPackage payload){
+  LOG_INFO("Checking checksum: " );
+  int* cChecksum = &payload.checksum;
+  int* tLength = &payload.length;
+  uint8_t tPayload[64] = &payload.payload;
+  int pchecksum = checksum(tPayload, tLength);
+  if(pchecksum == cChecksum){
+    printf("Checksum correct");
+  }
+  else{
+    printf("Checksum did not match payload");
+  }
+
+}
+
 void printSender(JumpPackage payload ) {
   LOG_INFO("Sender: " );
   linkaddr_t* sender = &payload.sender;
