@@ -49,12 +49,8 @@ int checksum(uint8_t* buffer, size_t len)
 void Radio_signal_strength(JumpPackage payload)
 {
   static signed char rss;
-  static signed char rss_val;
-  static signed char rss_offset;
   printf("Got message from %d\n",payload.sender);
-  rss_val = cc2420_last_rssi;
-  rss_offset=-45;
-  rss=rss_val + rss_offset;
+  rss = cc2420_rssi();
   printf("RSSI of Last Packet Received is %d\n",rss);
 }
 
