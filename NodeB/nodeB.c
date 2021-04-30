@@ -43,16 +43,13 @@ int checksum(uint8_t* buffer, size_t len)
 }
 
 void checkChecksum(JumpPackage payload){
-  LOG_INFO("Checking checksum: " );
-  int* cChecksum = &payload.checksum;
-  int* tLength = &payload.length;
-  uint8_t tPayload[64] = &payload.payload;
-  int pchecksum = checksum(tPayload, tLength);
-  if(pchecksum == cChecksum){
-    printf("Checksum correct");
+  LOG_INFO("Checking checksum: %i\n",payload.checksum );
+  int pchecksum = checksum(payload.payload, payload.length);
+  if(pchecksum == payload.checksum){
+    printf("Checksum correct\n");
   }
   else{
-    printf("Checksum did not match payload");
+    printf("Checksum did not match payload\n");
   }
 
 }
@@ -120,7 +117,7 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
   printSender(payload);
   printReceiver(payload);
   printPayload(payload);
-
+  checkChecksum(payload);
   /*
     LOG_INFO(" from address ");
     LOG_INFO_LLADDR(src);
@@ -129,6 +126,7 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
     LOG_INFO("\n");
   */
   addr_Sender = *src;
+  
   NETSTACK_NETWORK.output(&addr_nodeC);
   
   nullnet_set_input_callback(ack_callback);
