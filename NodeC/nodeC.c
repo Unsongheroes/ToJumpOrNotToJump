@@ -42,11 +42,8 @@ int checksum(uint8_t* buffer, size_t len)
 
 void checkChecksum(JumpPackage payload){
   LOG_INFO("Checking checksum: " );
-  int* cChecksum = &payload.checksum;
-  int* tLength = &payload.length;
-  uint8_t tPayload[64] = &payload.payload;
-  int pchecksum = checksum(tPayload, tLength);
-  if(pchecksum == cChecksum){
+  int pchecksum = checksum(payload.payload, payload.length);
+  if(pchecksum == payload.checksum){
     printf("Checksum correct");
   }
   else{
