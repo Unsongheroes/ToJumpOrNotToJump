@@ -46,6 +46,18 @@ int checksum(uint8_t* buffer, size_t len)
       return checksum;
 }
 
+void Radio_signal_strength(JumpPackage payload)
+{
+  static signed char rss;
+  static signed char rss_val;
+  static signed char rss_offset;
+  printf("Got message from %d\n",payload.sender);
+  rss_val = cc2420_last_rssi;
+  rss_offset=-45;
+  rss=rss_val + rss_offset;
+  printf("RSSI of Last Packet Received is %d\n",rss);
+}
+
 int findBestChannel() {
     
     int localBestMean = 0; // variable to hold the best value for each channel
@@ -100,7 +112,7 @@ PROCESS_THREAD(nodeA, ev, data)
   static struct etimer periodic_timer;
 
   uint8_t payloadData[64] = {1,2,3,4,5,6,7};
-  JumpPackage payload = {{{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}},{{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}},payloadData,checksum(payloadData,7),7};
+  JumpPackage payload = {{{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}},{{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}},{1,2,3,4,5,6,7},checksum(payloadData,7),7};
   nullnet_buf = (uint8_t *)&payload;
 
   nullnet_len = sizeof(payload);
