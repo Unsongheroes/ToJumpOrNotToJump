@@ -18,8 +18,8 @@
 #define LOG_LEVEL LOG_LEVEL_INFO
 /* ----------------------------- Defines ----------------------------------- */
 #define SEND_INTERVAL (10 * CLOCK_SECOND)
-static linkaddr_t addr_nodeB =     {{0xe3, 0xfd, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
-//static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+//static linkaddr_t addr_nodeB =     {{0xe3, 0xfd, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 //static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
 
 static bool Acknowledged = 0;
@@ -46,58 +46,34 @@ int checksum(uint8_t* buffer, size_t len)
       return checksum;
 }
 
-void Radio_signal_strength(JumpPackage payload)
+void Radio_signal_strength( const linkaddr_t *src)
 {
   static signed char rss;
-  printf("Got message from %d\n",payload.sender);
-  rss = cc2420_rssi();
+  static signed char rss_val;
+  static signed char rss_offset;
+  printf("Got message from: ");
+  LOG_INFO_LLADDR(src);
+  printf("\n");
+  rss_val = cc2420_last_rssi;
+  rss_offset=-45;
+  rss=rss_val + rss_offset;
   printf("RSSI of Last Packet Received is %d\n",rss);
 }
 
-int findBestChannel() {
-    
-    int localBestMean = 0; // variable to hold the best value for each channel
-    int newMeasure = 0; // variable to hold the current value for each channel
-    int globalBest = 0; // variable to hold the best value for all channels
-    int bestChannel = 0; // variable to hold the best channel number
-
-    int i,j;
-
-    for (i = 0; i < 16; i++) // for each channel
-    {
-      cc2420_set_channel(i+11); // set channel
-      int localSum = 0;
-      for (j = 0; j < 5; j++) // take 5 measurement for each channel
-      {
-          newMeasure = cc2420_rssi(); // get new RSSI value, by using this function we already have it in dBm since it adds the offset internally. 
-          localSum += newMeasure; // take a new measurement
-          //printf("Channel: %i - new measure: %i\n", i+11,newMeasure);
-      }
-      localBestMean = localSum / 5;
-      printf("Channel: %i - mean: %i\n", i+11,localBestMean);
-        if (i == 0) {
-          globalBest = localBestMean; // save the best measure for the first channel
-          bestChannel = i+11; // save the best channel number
-        } else {
-          if(localBestMean > globalBest){
-            globalBest = localBestMean;  // if better then set the best value for the current iteration
-            bestChannel = i+11; // save the best channel number
-          }
-        }
-    }
-    printf("Best: %i dBm on channel: %i\n", globalBest, bestChannel);
-    return bestChannel;
-}
 
 void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
 {
   uint8_t ack;
 
   memcpy(&ack, data, sizeof(ack));
-
+  Radio_signal_strength(src);
   if (ack == 1) {
     Acknowledged = 1;
     LOG_INFO("Acknowledged received from: ");
+    LOG_INFO_LLADDR(src);
+    LOG_INFO_("\n");
+  } else if (ack == 0) {
+    LOG_INFO("Not acknowledged received from: ");
     LOG_INFO_LLADDR(src);
     LOG_INFO_("\n");
   }
@@ -125,10 +101,10 @@ PROCESS_THREAD(nodeA, ev, data)
 
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer)); 	// Wait until time is expired
         etimer_reset(&periodic_timer);
-        if(!Acknowledged ) {
+        //if(!Acknowledged ) {
           
 
-          NETSTACK_NETWORK.output(&addr_nodeB);
+          NETSTACK_NETWORK.output(&addr_nodeC);
           size_t i;
           for ( i = 0; i < 64; i++)
           {
@@ -137,11 +113,11 @@ PROCESS_THREAD(nodeA, ev, data)
             }
             LOG_INFO("Sent message %u \n ", payload.payload[i] );
           }  
-        } else {
+        /*} else {
           LOG_INFO("Message delivered!\n");
           PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
           Acknowledged = 0;
-        }
+        }*/
     }
  
   PROCESS_END();
