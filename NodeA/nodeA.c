@@ -3,8 +3,9 @@
 #include "cc2420.h"
 
 #include "dev/button-sensor.h"
-/* #include "net/rime.h"
-#include "net/rime/collect.h" */
+/* #include "lib/random.h"
+#include "core/net/rime.h"
+#include "contiki/core/net/rime/collect.h" */
 #include "net/netstack.h"
 
 #include <string.h>
@@ -99,7 +100,7 @@ PROCESS_THREAD(nodeA, ev, data)
   static struct etimer periodic_timer;
 
   uint8_t payloadData[64] = {1,2,3,4,5,6,7};
-  JumpPackage payload = {{{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}},{{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}},{*payloadData,checksum(payloadData,7),7}};
+  JumpPackage payload = {{{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}},{{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}},payloadData,checksum(payloadData,7),7};
   nullnet_buf = (uint8_t *)&payload;
 
   nullnet_len = sizeof(payload);
