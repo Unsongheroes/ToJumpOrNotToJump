@@ -17,12 +17,15 @@
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_INFO
 /* ----------------------------- Defines ----------------------------------- */
-#define SEND_INTERVAL (10 * CLOCK_SECOND)
+#define SEND_INTERVAL (4 * CLOCK_SECOND)
+#define RSSI_THRESHOLD -125
 //static linkaddr_t addr_nodeB =     {{0xe3, 0xfd, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+//static linkaddr_t addr_broadCast = {{0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0}};
 //static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
 
 static bool Acknowledged = 0;
+static bool Pinging = true;
 /* -----------------------------         ----------------------------------- */
 PROCESS(nodeA, "Node A - Sender");
 AUTOSTART_PROCESSES(&nodeA);
@@ -46,7 +49,7 @@ int checksum(uint8_t* buffer, size_t len)
       return checksum;
 }
 
-void Radio_signal_strength( const linkaddr_t *src)
+bool Radio_signal_strength( const linkaddr_t *src)
 {
   static signed char rss;
   static signed char rss_val;
@@ -58,66 +61,91 @@ void Radio_signal_strength( const linkaddr_t *src)
   rss_offset=-45;
   rss=rss_val + rss_offset;
   printf("RSSI of Last Packet Received is %d\n",rss);
-}
-
-
-void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
-{
-  uint8_t ack;
-
-  memcpy(&ack, data, sizeof(ack));
-  Radio_signal_strength(src);
-  if (ack == 1) {
-    Acknowledged = 1;
-    LOG_INFO("Acknowledged received from: ");
-    LOG_INFO_LLADDR(src);
-    LOG_INFO_("\n");
-  } else if (ack == 0) {
-    LOG_INFO("Not acknowledged received from: ");
-    LOG_INFO_LLADDR(src);
-    LOG_INFO_("\n");
+  if(rss > RSSI_THRESHOLD && rss < 0) {
+    return true;
+  } else {
+    return false;
   }
+  
 }
 
-PROCESS_THREAD(nodeA, ev, data)
-{
-  static struct etimer periodic_timer;
-
+void sendPayload(linkaddr_t dest) {
   uint8_t payloadData[64] = {1,2,3,4,5,6,7};
   JumpPackage payload = {{{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}},{{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}},{1,2,3,4,5,6,7},checksum(payloadData,7),7};
   nullnet_buf = (uint8_t *)&payload;
 
   nullnet_len = sizeof(payload);
-  nullnet_set_input_callback(input_callback);
+  
+
+  NETSTACK_NETWORK.output(&dest);
+  size_t i;
+  for ( i = 0; i < 64; i++)
+  {
+    if(payload.payload[i]==0) {
+    break;
+    }
+    LOG_INFO("Sent message %u \n ", payload.payload[i] );
+  }
+}
+
+void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
+{
+  uint8_t ack;
+  memcpy(&ack, data, sizeof(ack));
+  if (Pinging) {
+    if (Radio_signal_strength(src)) {
+      Pinging = false;
+      sendPayload(addr_nodeC);
+    }
+  } else {
+    
+    if (ack == 1) {
+      Acknowledged = 1;
+      LOG_INFO("Acknowledged received from: ");
+      LOG_INFO_LLADDR(src);
+      LOG_INFO_("\n");
+    } else if (ack == 0) {
+      LOG_INFO("Not acknowledged received from: ");
+      LOG_INFO_LLADDR(src);
+      LOG_INFO_("\n");
+    }
+  }
+  
+}
+
+
+PROCESS_THREAD(nodeA, ev, data)
+{
+  static struct etimer periodic_timer;
+
+  
     
   PROCESS_BEGIN();
     printf("STARTING NODE A,,, \n");  
     etimer_set(&periodic_timer, SEND_INTERVAL);
-
-  SENSORS_ACTIVATE(button_sensor);
+    nullnet_set_input_callback(input_callback);
+    SENSORS_ACTIVATE(button_sensor);
     while (1)
     {
 //        nullnet_set_input_callback(input_callback);
-
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer)); 	// Wait until time is expired
         etimer_reset(&periodic_timer);
-        //if(!Acknowledged ) {
-          
+        if (Pinging) {
+          uint8_t payloadData = 1;
+          nullnet_buf = (uint8_t *)&payloadData;
+
+          nullnet_len = sizeof(payloadData);
+          nullnet_set_input_callback(input_callback);
 
           NETSTACK_NETWORK.output(&addr_nodeC);
-          size_t i;
-          for ( i = 0; i < 64; i++)
-          {
-            if(payload.payload[i]==0) {
-            break;
-            }
-            LOG_INFO("Sent message %u \n ", payload.payload[i] );
-          }  
-        /*} else {
+
+        } else if(!Acknowledged ) {
+            sendPayload(addr_nodeC);
+        } else {
           LOG_INFO("Message delivered!\n");
           PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
           Acknowledged = 0;
-        }*/
+        }
     }
  
   PROCESS_END();
