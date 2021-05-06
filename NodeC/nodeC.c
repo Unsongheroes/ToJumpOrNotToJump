@@ -40,14 +40,16 @@ int checksum(uint8_t* buffer, size_t len)
       return checksum;
 }
 
-void checkChecksum(JumpPackage payload){
-  LOG_INFO("Checking checksum: " );
+bool checkChecksum(JumpPackage payload){
+  LOG_INFO("Checking checksum: %i\n",payload.checksum );
   int pchecksum = checksum(payload.payload, payload.length);
   if(pchecksum == payload.checksum){
-    printf("Checksum correct");
+    printf("Checksum correct\n");
+    return true;
   }
   else{
-    printf("Checksum did not match payload");
+    printf("Checksum did not match payload\n");
+    return false;
   }
 
 }
@@ -91,6 +93,15 @@ void sendAck(const linkaddr_t *src) {
   LOG_INFO("Acknowledge sent!\n");
 }
 
+void sendNack(const linkaddr_t *src) {
+  uint8_t acknowledge = 0;
+  nullnet_buf = (uint8_t *)&acknowledge;
+  nullnet_len = sizeof(acknowledge);
+  linkaddr_t tmp = *src;
+  NETSTACK_NETWORK.output(&tmp);
+  LOG_INFO("Not acknowledge sent!\n");
+}
+
 void input_callback(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
 {
@@ -102,9 +113,11 @@ void input_callback(const void *data, uint16_t len,
   printSender(payload);
   printReceiver(payload);
   printPayload(payload);
-  if (checksum(payload.payload,payload.length) == payload.checksum) {
-      sendAck(src);
-
+  if (checkChecksum(payload)) {
+    sendAck(src);
+  }
+  else{
+    sendNack(src);
   }
 
 }
