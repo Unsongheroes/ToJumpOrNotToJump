@@ -19,8 +19,10 @@
 /* ----------------------------- Defines ----------------------------------- */
 #define SEND_INTERVAL (10 * CLOCK_SECOND)
 //static linkaddr_t addr_nodeB =     {{0xe3, 0xfd, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
-static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+//static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 //static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
+//static linkaddr_t cooja_nodeA = {{0x01, 0x01, 0x01, 0x00, 0x01, 0x74, 0x12, 0x00}};
+static linkaddr_t cooja_nodeC = {{0x02, 0x02, 0x02, 0x00, 0x02, 0x74, 0x12, 0x00}};
 
 static bool Acknowledged = 0;
 /* -----------------------------         ----------------------------------- */
@@ -104,7 +106,7 @@ PROCESS_THREAD(nodeA, ev, data)
         //if(!Acknowledged ) {
           
 
-          NETSTACK_NETWORK.output(&addr_nodeC);
+          NETSTACK_NETWORK.output(&cooja_nodeC);
           size_t i;
           for ( i = 0; i < 64; i++)
           {
