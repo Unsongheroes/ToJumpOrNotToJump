@@ -140,10 +140,12 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
 
 
   addr_Sender = *src;
-  if (payload.length > 0) { //received payload
+  NETSTACK_NETWORK.output(&addr_nodeC);
+  nullnet_set_input_callback(ack_callback);
+  /*if (payload.length > 0) { //received payload
       if(errorOrNot()) {
         sendNack(&addr_Sender);
-      }
+      } 
       printSender(payload);
       printReceiver(payload);
       printPayload(payload);
@@ -151,12 +153,12 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
     if(!checkChecksum(payload)){
       sendNack(&addr_Sender);
     } else {
-      NETSTACK_NETWORK.output(&addr_nodeC);
-      nullnet_set_input_callback(ack_callback);
+      
     }
   } else { // received ping
     sendAck(&addr_Sender);
   }
+  */
 }
 
 /* ----------------------------- Callbacks ----------------------------------- */

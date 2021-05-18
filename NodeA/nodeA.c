@@ -20,9 +20,9 @@
 #define SEND_INTERVAL (4 * CLOCK_SECOND)
 #define RSSI_THRESHOLD -10
 
-// static linkaddr_t addr_nodeB =     {{0xe3, 0xfd, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+ static linkaddr_t addr_nodeB =     {{0xe3, 0xfd, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 
-static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+// static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 //static linkaddr_t addr_broadCast = {{0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0}};
 
 //static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
@@ -34,9 +34,9 @@ static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0
 static bool Acknowledged = 0;
 static bool Pinging = true;
 //static clock_time_t PingStartBtime = 0;
-static clock_time_t PingStartCtime = 0;
+static clock_time_t PayloadStartCtime = 0;
 //static clock_time_t PingEndBtime = 0;
-static clock_time_t PingEndCtime = 0;
+static clock_time_t PayloadEndCtime = 0;
 /* static clock_time_t PayloadStartBtime = 0;
 static clock_time_t PayloadStartCtime = 0;
 static clock_time_t PayloadEndBtime = 0;
@@ -92,6 +92,8 @@ void sendPayload(linkaddr_t dest) {
 
   nullnet_len = sizeof(payload);
   
+  PayloadStartCtime = clock_time();
+  printf("ping! %lu \n", PayloadStartCtime);
   
   NETSTACK_NETWORK.output(&dest);
   size_t i;
@@ -106,9 +108,9 @@ void sendPayload(linkaddr_t dest) {
 
 void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
 {
-  PingEndCtime = clock_time();
-  printf("ping end: %lu \n", PingEndCtime);
-  LOG_INFO("Ping time: %lu \n", PingEndCtime - PingStartCtime);
+  PayloadEndCtime = clock_time();
+  printf("payload end: %lu \n", PayloadEndCtime);
+  LOG_INFO("payload time: %lu \n", PayloadEndCtime - PayloadStartCtime);
  //  uint8_t ack;
  /*  memcpy(&ack, data, sizeof(ack));
   if (Pinging) {
@@ -155,19 +157,17 @@ PROCESS_THREAD(nodeA, ev, data)
         etimer_reset(&periodic_timer);
         if (Pinging) {
           
-          uint8_t payloadData = 1;
-          nullnet_buf = (uint8_t *)&payloadData;
+          //uint8_t payloadData = 1;
+          //nullnet_buf = (uint8_t *)&payloadData;
 
-          nullnet_len = sizeof(payloadData);
-          nullnet_set_input_callback(input_callback);
+          //nullnet_len = sizeof(payloadData);
+          //nullnet_set_input_callback(input_callback);
 
-          
-          PingStartCtime = clock_time();
-          printf("ping! %lu \n", PingStartCtime);
-          NETSTACK_NETWORK.output(&addr_nodeC);
+          sendPayload(addr_nodeB);
+          //NETSTACK_NETWORK.output(&addr_nodeC);
 
         } else if(!Acknowledged ) {
-            sendPayload(addr_nodeC);
+            //sendPayload(addr_nodeC);
         }  else {
 
           LOG_INFO("Message delivered!\n");
