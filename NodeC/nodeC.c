@@ -129,14 +129,14 @@ AUTOSTART_PROCESSES(&main_process);
 
 PROCESS_THREAD(main_process, ev, data)
 {
-  nullnet_set_input_callback(input_callback);
-
   PROCESS_BEGIN();
   printf("STARTING NODE C,,, \n");
+  nullnet_set_input_callback(input_callback);
 
   SENSORS_ACTIVATE(button_sensor);
 
   while(1){
+    printf("Here");
     PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
     printf("hey");
   }

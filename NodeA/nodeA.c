@@ -20,9 +20,15 @@
 #define SEND_INTERVAL (4 * CLOCK_SECOND)
 #define RSSI_THRESHOLD -125
 //static linkaddr_t addr_nodeB =     {{0xe3, 0xfd, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+
 static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 //static linkaddr_t addr_broadCast = {{0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0}};
+
+//static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+
 //static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
+//static linkaddr_t cooja_nodeA = {{0x01, 0x01, 0x01, 0x00, 0x01, 0x74, 0x12, 0x00}};
+static linkaddr_t cooja_nodeC = {{0x02, 0x02, 0x02, 0x00, 0x02, 0x74, 0x12, 0x00}};
 
 static bool Acknowledged = 0;
 static bool Pinging = true;
@@ -137,11 +143,13 @@ PROCESS_THREAD(nodeA, ev, data)
           nullnet_len = sizeof(payloadData);
           nullnet_set_input_callback(input_callback);
 
+
           NETSTACK_NETWORK.output(&addr_nodeC);
 
         } else if(!Acknowledged ) {
             sendPayload(addr_nodeC);
-        } else {
+        }  else {
+
           LOG_INFO("Message delivered!\n");
           PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
           Acknowledged = 0;
