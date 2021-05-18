@@ -44,16 +44,15 @@ int checksum(uint8_t* buffer, size_t len)
 
 bool checkChecksum(JumpPackage payload){
   LOG_INFO("Checking checksum: %i\n",payload.checksum );
-  int pchecksum = checksum(payload.payload, payload.length);
-  if(pchecksum == payload.checksum){
-    printf("Checksum correct\n");
-    return true;
-  }
-  else{
-    printf("Checksum did not match payload\n");
-    return false;
-  }
-
+    int pchecksum = checksum(payload.payload, payload.length);
+    if(pchecksum == payload.checksum){
+      printf("Checksum correct\n");
+      return true;
+    }
+    else{
+      printf("Checksum did not match payload\n");
+      return false;
+    }
 }
 
 void printSender(JumpPackage payload ) {
@@ -144,13 +143,16 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
   */
 
   addr_Sender = *src;
-  if(!checkChecksum(payload)){
-    sendNack(&addr_Sender);
-  } else {
-    NETSTACK_NETWORK.output(&addr_nodeC);
-    nullnet_set_input_callback(ack_callback);
+  if (payload.length > 0) { //received payload
+    if(!checkChecksum(payload)){
+      sendNack(&addr_Sender);
+    } else {
+      NETSTACK_NETWORK.output(&addr_nodeC);
+      nullnet_set_input_callback(ack_callback);
+    }
+  } else { // received ping
+    sendAck(&addr_Sender);
   }
-  
 }
 
 /* ----------------------------- Callbacks ----------------------------------- */

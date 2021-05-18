@@ -113,13 +113,16 @@ void input_callback(const void *data, uint16_t len,
   printSender(payload);
   printReceiver(payload);
   printPayload(payload);
-  if (checkChecksum(payload)) {
-    sendAck(src);
+  if (payload.length > 0 ) { // payload received
+    if (checkChecksum(payload)) {
+      sendAck(src);
+    }
+    else{
+      sendNack(src);
+    }
+  } else { // ping received
+      sendAck(src);
   }
-  else{
-    sendNack(src);
-  }
-
 }
 
 /*---------------------------------------------------------------------------*/
