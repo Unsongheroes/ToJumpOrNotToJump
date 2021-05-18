@@ -119,10 +119,13 @@ void input_callback(const void *data, uint16_t len,
   nullnet_buf = (uint8_t *)&payload;
   nullnet_len = sizeof(payload);
   
-  printSender(payload);
-  printReceiver(payload);
-  printPayload(payload);
   if (payload.length > 0 ) { // payload received
+    if(errorOrNot()){
+      sendNack(src);
+    }
+    printSender(payload);
+    printReceiver(payload);
+    printPayload(payload);
     if (checkChecksum(payload)) {
       sendAck(src);
     }
