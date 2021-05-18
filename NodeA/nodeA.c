@@ -18,8 +18,9 @@
 #define LOG_LEVEL LOG_LEVEL_INFO
 /* ----------------------------- Defines ----------------------------------- */
 #define SEND_INTERVAL (4 * CLOCK_SECOND)
-#define RSSI_THRESHOLD -125
-//static linkaddr_t addr_nodeB =     {{0xe3, 0xfd, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+#define RSSI_THRESHOLD -10
+
+// static linkaddr_t addr_nodeB =     {{0xe3, 0xfd, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 
 static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 //static linkaddr_t addr_broadCast = {{0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0}};
@@ -28,10 +29,19 @@ static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0
 
 //static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
 //static linkaddr_t cooja_nodeA = {{0x01, 0x01, 0x01, 0x00, 0x01, 0x74, 0x12, 0x00}};
-static linkaddr_t cooja_nodeC = {{0x02, 0x02, 0x02, 0x00, 0x02, 0x74, 0x12, 0x00}};
+// static linkaddr_t cooja_nodeC = {{0x02, 0x02, 0x02, 0x00, 0x02, 0x74, 0x12, 0x00}};
 
 static bool Acknowledged = 0;
 static bool Pinging = true;
+//static clock_time_t PingStartBtime = 0;
+static clock_time_t PingStartCtime = 0;
+//static clock_time_t PingEndBtime = 0;
+static clock_time_t PingEndCtime = 0;
+/* static clock_time_t PayloadStartBtime = 0;
+static clock_time_t PayloadStartCtime = 0;
+static clock_time_t PayloadEndBtime = 0;
+static clock_time_t PayloadEndCtime = 0;
+ */
 /* -----------------------------         ----------------------------------- */
 PROCESS(nodeA, "Node A - Sender");
 AUTOSTART_PROCESSES(&nodeA);
@@ -82,7 +92,7 @@ void sendPayload(linkaddr_t dest) {
 
   nullnet_len = sizeof(payload);
   
-
+  
   NETSTACK_NETWORK.output(&dest);
   size_t i;
   for ( i = 0; i < 64; i++)
@@ -96,12 +106,18 @@ void sendPayload(linkaddr_t dest) {
 
 void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
 {
-  uint8_t ack;
-  memcpy(&ack, data, sizeof(ack));
+  PingEndCtime = clock_time();
+  printf("ping end: %lu \n", PingEndCtime);
+  LOG_INFO("Ping time: %lu \n", PingEndCtime - PingStartCtime);
+ //  uint8_t ack;
+ /*  memcpy(&ack, data, sizeof(ack));
   if (Pinging) {
     if (Radio_signal_strength(src)) {
       Pinging = false;
       sendPayload(addr_nodeC);
+    } else {
+      Pinging = false;
+      sendPayload(addr_nodeB);
     }
   } else {
     
@@ -115,7 +131,7 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
       LOG_INFO_LLADDR(src);
       LOG_INFO_("\n");
     }
-  }
+  } */
   
 }
 
@@ -127,6 +143,7 @@ PROCESS_THREAD(nodeA, ev, data)
   
     
   PROCESS_BEGIN();
+    clock_init();
     printf("STARTING NODE A,,, \n");  
     etimer_set(&periodic_timer, SEND_INTERVAL);
     nullnet_set_input_callback(input_callback);
@@ -137,13 +154,16 @@ PROCESS_THREAD(nodeA, ev, data)
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer)); 	// Wait until time is expired
         etimer_reset(&periodic_timer);
         if (Pinging) {
+          
           uint8_t payloadData = 1;
           nullnet_buf = (uint8_t *)&payloadData;
 
           nullnet_len = sizeof(payloadData);
           nullnet_set_input_callback(input_callback);
 
-
+          
+          PingStartCtime = clock_time();
+          printf("ping! %lu \n", PingStartCtime);
           NETSTACK_NETWORK.output(&addr_nodeC);
 
         } else if(!Acknowledged ) {
@@ -151,7 +171,7 @@ PROCESS_THREAD(nodeA, ev, data)
         }  else {
 
           LOG_INFO("Message delivered!\n");
-          PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
+          // PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
           Acknowledged = 0;
         }
     }
