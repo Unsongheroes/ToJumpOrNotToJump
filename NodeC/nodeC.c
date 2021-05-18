@@ -40,6 +40,15 @@ int checksum(uint8_t* buffer, size_t len)
       return checksum;
 }
 
+bool errorOrNot() {
+  int r = rand() % 10;
+  if (r < 5) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 bool checkChecksum(JumpPackage payload){
   LOG_INFO("Checking checksum: %i\n",payload.checksum );
   int pchecksum = checksum(payload.payload, payload.length);

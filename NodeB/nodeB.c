@@ -23,6 +23,15 @@ static linkaddr_t addr_Sender;
 PROCESS(nodeB, "Node B - Sender");
 AUTOSTART_PROCESSES(&nodeB);
 /* ----------------------------- Helper ----------------------------------- */
+bool errorOrNot() {
+  int r = rand() % 10;
+  if (r < 5) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 int checksum(uint8_t* buffer, size_t len)
 {
       size_t i;
@@ -128,22 +137,14 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
   memcpy(&payload, data, sizeof(payload));
   nullnet_buf = (uint8_t *)&payload;
   nullnet_len = sizeof(payload);
-  
-  printSender(payload);
-  printReceiver(payload);
-  printPayload(payload);
-  
-  
-  /*
-    LOG_INFO(" from address ");
-    LOG_INFO_LLADDR(src);
-    LOG_INFO(" sent to ");
-    LOG_INFO_LLADDR(dest);
-    LOG_INFO("\n");
-  */
+
 
   addr_Sender = *src;
   if (payload.length > 0) { //received payload
+      printSender(payload);
+      printReceiver(payload);
+      printPayload(payload);
+  
     if(!checkChecksum(payload)){
       sendNack(&addr_Sender);
     } else {
