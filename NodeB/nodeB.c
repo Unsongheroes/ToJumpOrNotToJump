@@ -109,6 +109,8 @@ void sendNack(const linkaddr_t *src) {
 
 /* ----------------------------- Helper ----------------------------------- */
 /* ----------------------------- Callbacks ----------------------------------- */
+void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest);
+
 void ack_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest) {
   uint8_t ack;
 
@@ -121,6 +123,7 @@ void ack_callback(const void *data, uint16_t len, const linkaddr_t *src, const l
     LOG_INFO_("\n");
     
     sendAck(&addr_Sender);
+    nullnet_set_input_callback(input_callback);
   } else {
     LOG_INFO("Not acknowledged received from: ");
     LOG_INFO_LLADDR(src);
@@ -141,7 +144,7 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
 
   addr_Sender = *src;
   NETSTACK_NETWORK.output(&addr_nodeC);
-  nullnet_set_input_callback(ack_callback);
+  nullnet_set_input_callback(input_callback);
   /*if (payload.length > 0) { //received payload
       if(errorOrNot()) {
         sendNack(&addr_Sender);
