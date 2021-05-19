@@ -118,8 +118,9 @@ void input_callback(const void *data, uint16_t len,
   memcpy(&payload, data, sizeof(payload));
   nullnet_buf = (uint8_t *)&payload;
   nullnet_len = sizeof(payload);
+  sendAck(src);
   
-  if (payload.length > 0 ) { // payload received
+  /* if (payload.length > 0 ) { // payload received
     if(errorOrNot()){
       sendNack(src);
     }
@@ -134,7 +135,7 @@ void input_callback(const void *data, uint16_t len,
     }
   } else { // ping received
       sendAck(src);
-  }
+  } */
 }
 
 /*---------------------------------------------------------------------------*/
