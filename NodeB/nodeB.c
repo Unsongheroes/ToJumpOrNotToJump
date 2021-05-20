@@ -15,10 +15,13 @@
 #define LOG_LEVEL LOG_LEVEL_INFO
 /* ----------------------------- Defines ----------------------------------- */
 #define SEND_INTERVAL (8 * CLOCK_SECOND)
+#define TIMEOUTLIMIT 160
 //static linkaddr_t addr_nodeB =     {{0x77, 0xb7, 0x7b, 0x11, 0x0, 0x74, 0x12, 0x00 }};
 static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 //static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
 static linkaddr_t addr_Sender;
+static clock_time_t timelimit = 0;
+static struct etimer periodic_timer;
 /* -----------------------------         ----------------------------------- */
 PROCESS(nodeB, "Node B - Sender");
 AUTOSTART_PROCESSES(&nodeB);
@@ -97,6 +100,7 @@ void sendAck(const linkaddr_t *src) {
   nullnet_len = sizeof(acknowledge);
   NETSTACK_NETWORK.output(src);
   LOG_INFO("Acknowledge sent!\n");
+  nullnet_set_input_callback(input_callback);
 }
 
 void sendNack(const linkaddr_t *src) {
@@ -105,15 +109,20 @@ void sendNack(const linkaddr_t *src) {
   nullnet_len = sizeof(acknowledge);
   NETSTACK_NETWORK.output(src);
   LOG_INFO("Not acknowledge sent!\n");
+  nullnet_set_input_callback(input_callback);
 }
 
 /* ----------------------------- Helper ----------------------------------- */
 /* ----------------------------- Callbacks ----------------------------------- */
 void ack_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest) {
   uint8_t ack;
+  
+
 
   memcpy(&ack, data, sizeof(ack));
-
+  if (*src == addr_Sender) {
+    return;
+  }
   if (ack == 1) {
     
     LOG_INFO("Acknowledged received from: ");
@@ -152,6 +161,7 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
       sendNack(&addr_Sender);
     } else {
       NETSTACK_NETWORK.output(&addr_nodeC);
+      etimer_set(&periodic_timer, TIMEOUTLIMIT);
       nullnet_set_input_callback(ack_callback);
     }
   } else { // received ping
@@ -164,13 +174,13 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
 
 PROCESS_THREAD(nodeB, ev, data)
 {
-  static struct etimer periodic_timer;
+  
 
   JumpPackage payload;
   nullnet_buf = (uint8_t *)&payload;
   nullnet_len = sizeof(payload);
   nullnet_set_input_callback(input_callback);
-    
+  
   PROCESS_BEGIN();
     printf("STARTING NODE B,,, \n");
     etimer_set(&periodic_timer, SEND_INTERVAL);
@@ -181,7 +191,7 @@ PROCESS_THREAD(nodeB, ev, data)
         //nullnet_set_input_callback(input_callback);
 
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer)); 	// Wait until time is expired
-        etimer_reset(&periodic_timer);
+        nullnet_set_input_callback(input_callback);
 
     }
  
