@@ -16,6 +16,7 @@
 #include "sys/log.h"
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_INFO
+
 /* ----------------------------- Defines ----------------------------------- */
 #define SEND_INTERVAL (4 * CLOCK_SECOND)
 #define RSSI_THRESHOLD -110
@@ -33,12 +34,28 @@ static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0
 //static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
 //static linkaddr_t cooja_nodeA = {{0x01, 0x01, 0x01, 0x00, 0x01, 0x74, 0x12, 0x00}};
 //static linkaddr_t cooja_nodeC = {{0x02, 0x02, 0x02, 0x00, 0x02, 0x74, 0x12, 0x00}};
-static int timeoutCycles = 20;  // 20 clockcycles = 20/125 =0.16
+static int timeoutCycles = 10;  // 20 clockcycles = 20/125 =0.16
 static int timeoutCounter = 0;
 //static int nackCounter = 0;
 static bool Acknowledged = 0;
-static bool Pinging = true;
+static bool Pinging = false;
+static struct etimer periodic_timer;
 /* -----------------------------         ----------------------------------- */
+// State machine setup
+struct state;
+typedef void state_fn(struct state *);
+struct state
+{
+    state_fn * next; // next pointer to the next state
+    int counter;
+    bool relaying;
+    //linkaddr_t receiver;
+};
+state_fn init, pinging, transmitting; //the different states for the mote
+/*-----------------------------------------------------------*/
+
+
+
 PROCESS(nodeA, "Node A - Sender");
 AUTOSTART_PROCESSES(&nodeA);
 /* ----------------------------- Helper ----------------------------------- */
@@ -100,21 +117,12 @@ void sendPayload(linkaddr_t dest) {
   }
 }
 
-void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
-{
+
+void transmitting_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest) {
   uint8_t ack;
   memcpy(&ack, data, sizeof(ack));
-  if (Pinging) {
-    if (Radio_signal_strength(src)) {
-      Pinging = false;
-      sendPayload(addr_nodeC);
-    } else {
-      Pinging = false;
-      sendPayload(addr_nodeB);
-    }
-  } else {
+  if (ack == 1) {
     
-    if (ack == 1) {
       Acknowledged = 1;
       LOG_INFO("Acknowledged received from: ");
       LOG_INFO_LLADDR(src);
@@ -124,28 +132,79 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
       LOG_INFO_LLADDR(src);
       LOG_INFO_("\n");
     }
+}
+void pinging_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
+{
+  uint8_t ack;
+  memcpy(&ack, data, sizeof(ack));
+
+  if (Radio_signal_strength(src)) {
+    Pinging = true;
+  } else {
+    Pinging = false;
   }
-  
 }
 
+void transmitting(struct state * state) {
+  nullnet_set_input_callback(transmitting_callback);
+  sendPayload(addr_nodeC);
+  state->next = init;
+}
 
+void pinging(struct state * state) {
+ printf("%s \n", __func__);
+ if (Pinging) {
+   state->next = transmitting;
+ } else if (state->counter < TIMEOUT_COUNTER_LIMIT) {
+      timeoutCycles = timeoutCycles * 2;
+      state->counter++;
+      uint8_t payloadData = 1; 
+      nullnet_buf = (uint8_t *)&payloadData;
+
+      nullnet_len = sizeof(payloadData);
+      nullnet_set_input_callback(pinging_callback);
+      if (state->relaying) 
+        NETSTACK_NETWORK.output(&addr_nodeB);
+      else 
+        NETSTACK_NETWORK.output(&addr_nodeC);
+      
+      etimer_set(&periodic_timer, timeoutCycles);
+      state->next = pinging;
+      LOG_INFO("Timeout cycles: %i timeout counter: %i clock_time: %lu \n",timeoutCycles,timeoutCounter,clock_time());
+    } else {
+      state->counter = 0;
+      state->relaying = true;
+      state->next = pinging;
+      LOG_INFO("Timeout counter limit reached...\n");
+    }
+}
+void init(struct state * state)
+{
+    printf("%s \n", __func__);
+    printf("STARTING NODE A,,, \n"); 
+    timeoutCycles = 10; 
+    etimer_set(&periodic_timer, timeoutCycles);
+    state->next = pinging;
+}
+
+static struct state state = { init, 0, false };
 PROCESS_THREAD(nodeA, ev, data)
 {
-  static struct etimer periodic_timer;
+  
 
   
     
   PROCESS_BEGIN();
-    printf("STARTING NODE A,,, \n");  
-    etimer_set(&periodic_timer, timeoutCycles);
-    nullnet_set_input_callback(input_callback);
+    
     SENSORS_ACTIVATE(button_sensor);
     while (1)
     {
 //        nullnet_set_input_callback(input_callback);
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer)); 	// Wait until time is expired
+        if (state.next != NULL) // handle next state if not null
+            state.next(&state);
         //etimer_reset(&periodic_timer);
-        if (timeoutCounter < TIMEOUT_COUNTER_LIMIT) {
+       /*  if (timeoutCounter < TIMEOUT_COUNTER_LIMIT) {
           timeoutCycles = timeoutCycles * 2;
           timeoutCounter++;
           etimer_set(&periodic_timer, timeoutCycles);
@@ -174,7 +233,7 @@ PROCESS_THREAD(nodeA, ev, data)
           LOG_INFO("Message delivered!\n");
           PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
           Acknowledged = 0;
-        }
+        } */
     }
  
   PROCESS_END();
