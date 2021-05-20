@@ -34,10 +34,10 @@ static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0
 //static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
 //static linkaddr_t cooja_nodeA = {{0x01, 0x01, 0x01, 0x00, 0x01, 0x74, 0x12, 0x00}};
 //static linkaddr_t cooja_nodeC = {{0x02, 0x02, 0x02, 0x00, 0x02, 0x74, 0x12, 0x00}};
-static int timeoutCycles = 10;  // 20 clockcycles = 20/125 =0.16
-static int timeoutCounter = 0;
+//static int timeoutCycles = 10;  // 20 clockcycles = 20/125 =0.16
 //static int nackCounter = 0;
-static bool Acknowledged = 0;
+static bool Acknowledged = false;
+static bool Notacknowledged = false;
 static bool Pinging = false;
 static struct etimer periodic_timer;
 /* -----------------------------         ----------------------------------- */
@@ -47,8 +47,10 @@ typedef void state_fn(struct state *);
 struct state
 {
     state_fn * next; // next pointer to the next state
-    int counter;
+    int timeoutCounter;
+    int nackCounter;
     bool relaying;
+    int timeoutCycles;
     //linkaddr_t receiver;
 };
 state_fn init, pinging, transmitting; //the different states for the mote
@@ -123,11 +125,12 @@ void transmitting_callback(const void *data, uint16_t len, const linkaddr_t *src
   memcpy(&ack, data, sizeof(ack));
   if (ack == 1) {
     
-      Acknowledged = 1;
+      Acknowledged = true;
       LOG_INFO("Acknowledged received from: ");
       LOG_INFO_LLADDR(src);
       LOG_INFO_("\n");
     } else if (ack == 0) {
+      Notacknowledged = true;
       LOG_INFO("Not acknowledged received from: ");
       LOG_INFO_LLADDR(src);
       LOG_INFO_("\n");
@@ -146,18 +149,57 @@ void pinging_callback(const void *data, uint16_t len, const linkaddr_t *src, con
 }
 
 void transmitting(struct state * state) {
+  printf("%s \n", __func__);
   nullnet_set_input_callback(transmitting_callback);
-  sendPayload(addr_nodeC);
-  state->next = init;
+  if(Acknowledged) {
+    state->next = init;
+    etimer_set(&periodic_timer, state->timeoutCycles);
+  }  else if (state->timeoutCounter < TIMEOUT_COUNTER_LIMIT && !Notacknowledged) {
+      state->timeoutCycles = state->timeoutCycles * 2;
+     
+      if (state->relaying) 
+        sendPayload(addr_nodeB);
+      else 
+        sendPayload(addr_nodeC);
+      etimer_set(&periodic_timer, state->timeoutCycles);
+      state->next = transmitting;
+      LOG_INFO("Timeout cycles: %i timeout counter: %i clock_time: %lu \n",state->timeoutCycles,state->timeoutCounter,clock_time());
+  } else if (state->nackCounter < NACK_COUNTER_LIMIT && Notacknowledged) {
+      LOG_INFO("nack counter: %i clock_time: %lu \n",state->nackCounter,clock_time());
+      state->nackCounter++;
+      Notacknowledged = false;
+      if (state->relaying) 
+        sendPayload(addr_nodeB);
+      else 
+        sendPayload(addr_nodeC);
+
+      state->next = transmitting;
+      etimer_set(&periodic_timer, state->timeoutCycles);
+      
+  } else {
+    LOG_INFO("Timeout or nack limit reached go ping. Relaying: %d\n",state->relaying);
+    Acknowledged = false;
+    Notacknowledged = false;
+    state->relaying = !state->relaying;
+    state->timeoutCounter = 0;
+    state->nackCounter = 0;
+    state->timeoutCycles = 20;
+    state->next = pinging;
+    etimer_set(&periodic_timer, state->timeoutCycles);
+  }
 }
 
 void pinging(struct state * state) {
  printf("%s \n", __func__);
  if (Pinging) {
+   printf("Setting next state to transmtting \n");
    state->next = transmitting;
- } else if (state->counter < TIMEOUT_COUNTER_LIMIT) {
-      timeoutCycles = timeoutCycles * 2;
-      state->counter++;
+   state->timeoutCounter = 0;
+   state->timeoutCycles = 20;
+   etimer_set(&periodic_timer, state->timeoutCycles);
+ } else if (state->timeoutCounter < TIMEOUT_COUNTER_LIMIT) {
+      state->timeoutCycles = state->timeoutCycles * 2;
+      state->timeoutCounter++;
       uint8_t payloadData = 1; 
       nullnet_buf = (uint8_t *)&payloadData;
 
@@ -168,13 +210,15 @@ void pinging(struct state * state) {
       else 
         NETSTACK_NETWORK.output(&addr_nodeC);
       
-      etimer_set(&periodic_timer, timeoutCycles);
+      etimer_set(&periodic_timer, state->timeoutCycles);
       state->next = pinging;
-      LOG_INFO("Timeout cycles: %i timeout counter: %i clock_time: %lu \n",timeoutCycles,timeoutCounter,clock_time());
+      LOG_INFO("Timeout cycles: %i timeout counter: %i clock_time: %lu relaying: %d \n",state->timeoutCycles,state->timeoutCounter,clock_time(),state->relaying);
     } else {
-      state->counter = 0;
-      state->relaying = true;
+      state->timeoutCounter = 0;
+      state->timeoutCycles = 20;
+      state->relaying = !state->relaying;
       state->next = pinging;
+      etimer_set(&periodic_timer, state->timeoutCycles);
       LOG_INFO("Timeout counter limit reached...\n");
     }
 }
@@ -182,20 +226,22 @@ void init(struct state * state)
 {
     printf("%s \n", __func__);
     printf("STARTING NODE A,,, \n"); 
-    timeoutCycles = 10; 
-    etimer_set(&periodic_timer, timeoutCycles);
+    state->timeoutCycles = 20; 
+    state->timeoutCounter = 0;
+    state->nackCounter = 0;
+    state->relaying = false;
+    Acknowledged = false;
+    Notacknowledged = false;
+    etimer_set(&periodic_timer, state->timeoutCycles);
     state->next = pinging;
 }
 
-static struct state state = { init, 0, false };
+static struct state state = { init, 0, 0, false, 20 };
 PROCESS_THREAD(nodeA, ev, data)
 {
-  
-
-  
     
   PROCESS_BEGIN();
-    
+    state.next(&state);
     SENSORS_ACTIVATE(button_sensor);
     while (1)
     {
