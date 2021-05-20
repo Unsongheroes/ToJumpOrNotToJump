@@ -151,9 +151,7 @@ PROCESS_THREAD(main_process, ev, data)
   SENSORS_ACTIVATE(button_sensor);
 
   while(1){
-    printf("Here");
     PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
-    printf("hey");
   }
   PROCESS_END();
 }
