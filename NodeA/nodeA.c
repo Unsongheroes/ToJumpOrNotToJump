@@ -226,7 +226,7 @@ void pinging(struct state * state) {
 void init(struct state * state)
 {
     printf("%s \n", __func__);
-    printf("STARTING NODE A,,, \n"); 
+    
     state->timeoutCycles = 20; 
     state->timeoutCounter = 0;
     state->nackCounter = 0;
@@ -242,6 +242,7 @@ PROCESS_THREAD(nodeA, ev, data)
 {
     
   PROCESS_BEGIN();
+    printf("STARTING NODE A,,, \n"); 
     state.next(&state);
     SENSORS_ACTIVATE(button_sensor);
     while (1)
