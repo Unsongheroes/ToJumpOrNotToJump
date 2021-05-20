@@ -18,7 +18,9 @@
 #define LOG_LEVEL LOG_LEVEL_INFO
 /* ----------------------------- Defines ----------------------------------- */
 #define SEND_INTERVAL (4 * CLOCK_SECOND)
-#define RSSI_THRESHOLD -125
+#define RSSI_THRESHOLD -110
+#define NACK_COUNTER_LIMIT 3
+#define TIMEOUT_COUNTER_LIMIT 3
 //static linkaddr_t addr_nodeB =     {{0xe3, 0xfd, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 
 static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
@@ -29,7 +31,7 @@ static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0
 //static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
 //static linkaddr_t cooja_nodeA = {{0x01, 0x01, 0x01, 0x00, 0x01, 0x74, 0x12, 0x00}};
 static linkaddr_t cooja_nodeC = {{0x02, 0x02, 0x02, 0x00, 0x02, 0x74, 0x12, 0x00}};
-
+static timeoutSeconds = 1;
 static bool Acknowledged = 0;
 static bool Pinging = true;
 /* -----------------------------         ----------------------------------- */
