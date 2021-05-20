@@ -24,14 +24,18 @@
 //static linkaddr_t addr_nodeB =     {{0xe3, 0xfd, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 
 static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+
+static linkaddr_t addr_wrong =     {{0x44, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 //static linkaddr_t addr_broadCast = {{0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0}};
 
 //static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 
 //static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
 //static linkaddr_t cooja_nodeA = {{0x01, 0x01, 0x01, 0x00, 0x01, 0x74, 0x12, 0x00}};
-static linkaddr_t cooja_nodeC = {{0x02, 0x02, 0x02, 0x00, 0x02, 0x74, 0x12, 0x00}};
-static timeoutSeconds = 1;
+//static linkaddr_t cooja_nodeC = {{0x02, 0x02, 0x02, 0x00, 0x02, 0x74, 0x12, 0x00}};
+static int timeoutCycles = 20;  // 20 clockcycles = 20/125 =0.16
+static int timeoutCounter = 0;
+//static int nackCounter = 0;
 static bool Acknowledged = 0;
 static bool Pinging = true;
 /* -----------------------------         ----------------------------------- */
@@ -130,14 +134,26 @@ PROCESS_THREAD(nodeA, ev, data)
     
   PROCESS_BEGIN();
     printf("STARTING NODE A,,, \n");  
-    etimer_set(&periodic_timer, SEND_INTERVAL);
+    etimer_set(&periodic_timer, timeoutCycles);
     nullnet_set_input_callback(input_callback);
     SENSORS_ACTIVATE(button_sensor);
     while (1)
     {
 //        nullnet_set_input_callback(input_callback);
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer)); 	// Wait until time is expired
-        etimer_reset(&periodic_timer);
+        //etimer_reset(&periodic_timer);
+        if (timeoutCounter < TIMEOUT_COUNTER_LIMIT) {
+          timeoutCycles = timeoutCycles * 2;
+          timeoutCounter++;
+          etimer_set(&periodic_timer, timeoutCycles);
+          LOG_INFO("Timeout cycles: %i timeout counter: %i clock_time: %lu \n",timeoutCycles,timeoutCounter,clock_time());
+        } else {
+          LOG_INFO("Timeout counter limit reached...\n");
+          PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
+        }
+        
+
+/* 
         if (Pinging) {
           uint8_t payloadData = 1;
           nullnet_buf = (uint8_t *)&payloadData;
@@ -155,7 +171,7 @@ PROCESS_THREAD(nodeA, ev, data)
           LOG_INFO("Message delivered!\n");
           PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
           Acknowledged = 0;
-        }
+        } */
     }
  
   PROCESS_END();
