@@ -110,6 +110,7 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
 {
   PayloadEndCtime = clock_time();
   printf("payload end: %lu \n", PayloadEndCtime);
+  Radio_signal_strength(src);
   LOG_INFO("payload time: %lu \n", PayloadEndCtime - PayloadStartCtime);
  //  uint8_t ack;
  /*  memcpy(&ack, data, sizeof(ack));
