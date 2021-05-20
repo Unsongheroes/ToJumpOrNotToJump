@@ -156,7 +156,7 @@ void transmitting(struct state * state) {
     etimer_set(&periodic_timer, state->timeoutCycles);
   }  else if (state->timeoutCounter < TIMEOUT_COUNTER_LIMIT && !Notacknowledged) {
       state->timeoutCycles = state->timeoutCycles * 2;
-     
+      state->timeoutCounter++;
       if (state->relaying) 
         sendPayload(addr_nodeB);
       else 
@@ -165,8 +165,9 @@ void transmitting(struct state * state) {
       state->next = transmitting;
       LOG_INFO("Timeout cycles: %i timeout counter: %i clock_time: %lu \n",state->timeoutCycles,state->timeoutCounter,clock_time());
   } else if (state->nackCounter < NACK_COUNTER_LIMIT && Notacknowledged) {
-      LOG_INFO("nack counter: %i clock_time: %lu \n",state->nackCounter,clock_time());
       state->nackCounter++;
+      LOG_INFO("nack counter: %i clock_time: %lu \n",state->nackCounter,clock_time());
+      
       Notacknowledged = false;
       if (state->relaying) 
         sendPayload(addr_nodeB);
