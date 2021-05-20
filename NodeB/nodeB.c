@@ -16,7 +16,7 @@
 /* ----------------------------- Defines ----------------------------------- */
 #define SEND_INTERVAL (8 * CLOCK_SECOND)
 //static linkaddr_t addr_nodeB =     {{0x77, 0xb7, 0x7b, 0x11, 0x0, 0x74, 0x12, 0x00 }};
-static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+//static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 //static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
 static linkaddr_t addr_Sender;
 /* -----------------------------         ----------------------------------- */
@@ -136,15 +136,15 @@ void ack_callback(const void *data, uint16_t len, const linkaddr_t *src, const l
 void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
 {
 
-  JumpPackage payload;
-  memcpy(&payload, data, sizeof(payload));
-  nullnet_buf = (uint8_t *)&payload;
-  nullnet_len = sizeof(payload);
-
-
+  //JumpPackage payload;
+  //memcpy(&payload, data, sizeof(payload));
+  //nullnet_buf = (uint8_t *)&payload;
+  //nullnet_len = sizeof(payload);
   addr_Sender = *src;
-  NETSTACK_NETWORK.output(&addr_nodeC);
-  nullnet_set_input_callback(input_callback);
+  sendAck(&addr_Sender);
+  //
+  //NETSTACK_NETWORK.output(&addr_nodeC);
+  //nullnet_set_input_callback(input_callback);
   /*if (payload.length > 0) { //received payload
       if(errorOrNot()) {
         sendNack(&addr_Sender);
