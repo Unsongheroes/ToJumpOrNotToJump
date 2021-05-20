@@ -21,11 +21,11 @@
 #define RSSI_THRESHOLD -110
 #define NACK_COUNTER_LIMIT 3
 #define TIMEOUT_COUNTER_LIMIT 3
-//static linkaddr_t addr_nodeB =     {{0xe3, 0xfd, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+static linkaddr_t addr_nodeB =     {{0xe3, 0xfd, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 
 static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 
-static linkaddr_t addr_wrong =     {{0x44, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+// static linkaddr_t addr_wrong =     {{0x44, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 //static linkaddr_t addr_broadCast = {{0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0}};
 
 //static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
@@ -108,6 +108,9 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
     if (Radio_signal_strength(src)) {
       Pinging = false;
       sendPayload(addr_nodeC);
+    } else {
+      Pinging = false;
+      sendPayload(addr_nodeB);
     }
   } else {
     
@@ -153,7 +156,7 @@ PROCESS_THREAD(nodeA, ev, data)
         }
         
 
-/* 
+
         if (Pinging) {
           uint8_t payloadData = 1;
           nullnet_buf = (uint8_t *)&payloadData;
@@ -171,7 +174,7 @@ PROCESS_THREAD(nodeA, ev, data)
           LOG_INFO("Message delivered!\n");
           PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
           Acknowledged = 0;
-        } */
+        }
     }
  
   PROCESS_END();
