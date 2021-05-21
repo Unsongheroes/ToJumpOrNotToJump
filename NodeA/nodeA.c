@@ -49,6 +49,7 @@ struct state
     state_fn * next; // next pointer to the next state
     int timeoutCounter;
     int nackCounter;
+    int sequenceNumber;
     bool relaying;
     int timeoutCycles;
     //linkaddr_t receiver;
@@ -100,9 +101,9 @@ bool Radio_signal_strength( const linkaddr_t *src)
   
 }
 
-void sendPayload(linkaddr_t dest) {
+void sendPayload(linkaddr_t dest, int sequenceNumber) {
   uint8_t payloadData[64] = {1,2,3,4,5,6,7};
-  JumpPackage payload = {{{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}},{{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}},{1,2,3,4,5,6,7},checksum(payloadData,7),7};
+  JumpPackage payload = {{{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}},{{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}},{1*sequenceNumber,2*sequenceNumber,3*sequenceNumber,4*sequenceNumber,5*sequenceNumber,6*sequenceNumber,7*sequenceNumber},sequenceNumber,checksum(payloadData,7),7};
   nullnet_buf = (uint8_t *)&payload;
 
   nullnet_len = sizeof(payload);
@@ -153,14 +154,15 @@ void transmitting(struct state * state) {
   nullnet_set_input_callback(transmitting_callback);
   if(Acknowledged) {
     state->next = init;
+    state->sequenceNumber++;
     etimer_set(&periodic_timer, state->timeoutCycles);
   }  else if (state->timeoutCounter < TIMEOUT_COUNTER_LIMIT && !Notacknowledged) {
       state->timeoutCycles = state->timeoutCycles * 2;
       state->timeoutCounter++;
       if (state->relaying) 
-        sendPayload(addr_nodeB);
+        sendPayload(addr_nodeB,state->sequenceNumber);
       else 
-        sendPayload(addr_nodeC);
+        sendPayload(addr_nodeC,state->sequenceNumber);
       etimer_set(&periodic_timer, state->timeoutCycles);
       state->next = transmitting;
       LOG_INFO("Timeout cycles: %i timeout counter: %i clock_time: %lu \n",state->timeoutCycles,state->timeoutCounter,clock_time());
@@ -170,9 +172,9 @@ void transmitting(struct state * state) {
       
       Notacknowledged = false;
       if (state->relaying) 
-        sendPayload(addr_nodeB);
+        sendPayload(addr_nodeB,state->sequenceNumber);
       else 
-        sendPayload(addr_nodeC);
+        sendPayload(addr_nodeC,state->sequenceNumber);
 
       state->next = transmitting;
       etimer_set(&periodic_timer, state->timeoutCycles);

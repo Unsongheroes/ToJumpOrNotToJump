@@ -28,7 +28,7 @@ AUTOSTART_PROCESSES(&nodeB);
 /* ----------------------------- Helper ----------------------------------- */
 bool errorOrNot() {
   int r = rand() % 10;
-  if (r < 5) {
+  if (r > 10) {
     return true;
   } else {
     return false;
@@ -152,9 +152,9 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
 
   addr_Sender = *src;
   if (payload.length > 0) { //received payload
-      if(errorOrNot()) {
+      /* if(errorOrNot()) {
         sendNack(&addr_Sender);
-      }
+      } */
       printSender(payload);
       printReceiver(payload);
       printPayload(payload);
