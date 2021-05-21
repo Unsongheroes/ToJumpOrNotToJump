@@ -22,6 +22,7 @@
 #define RSSI_THRESHOLD -110
 #define NACK_COUNTER_LIMIT 3
 #define TIMEOUT_COUNTER_LIMIT 3
+#define INITIAL_TIMEOUT 30
 static linkaddr_t addr_nodeB =     {{0xe3, 0xfd, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 
 static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
@@ -38,7 +39,7 @@ static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0
 //static int nackCounter = 0;
 static bool Acknowledged = false;
 static bool Notacknowledged = false;
-static bool Pinging = false;
+static int Pinging = 0;
 static struct etimer periodic_timer;
 /* -----------------------------         ----------------------------------- */
 // State machine setup
@@ -52,6 +53,7 @@ struct state
     int sequenceNumber;
     bool relaying;
     int timeoutCycles;
+    bool transmitting;
     //linkaddr_t receiver;
 };
 state_fn init, pinging, transmitting; //the different states for the mote
@@ -102,8 +104,15 @@ bool Radio_signal_strength( const linkaddr_t *src)
 }
 
 void sendPayload(linkaddr_t dest, int sequenceNumber) {
-  uint8_t payloadData[64] = {1,2,3,4,5,6,7};
-  JumpPackage payload = {{{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}},{{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}},{1*sequenceNumber,2*sequenceNumber,3*sequenceNumber,4*sequenceNumber,5*sequenceNumber,6*sequenceNumber,7*sequenceNumber},sequenceNumber,checksum(payloadData,7),7};
+  uint8_t payloadData[64] = {1*sequenceNumber,2*sequenceNumber,3*sequenceNumber,4*sequenceNumber,5*sequenceNumber,6*sequenceNumber,7*sequenceNumber};
+  JumpPackage payload;
+  payload.sender = (linkaddr_t){{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
+  payload.destination = (linkaddr_t){{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+  memcpy(payload.payload,payloadData,64);
+  payload.sequenceNumber = sequenceNumber;
+  payload.checksum = checksum(payloadData,7);
+  payload.length = 7;
+  //{{{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}},{{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}},payloadData,sequenceNumber,checksum(payloadData,7),7}
   nullnet_buf = (uint8_t *)&payload;
 
   nullnet_len = sizeof(payload);
@@ -143,9 +152,9 @@ void pinging_callback(const void *data, uint16_t len, const linkaddr_t *src, con
   memcpy(&ack, data, sizeof(ack));
 
   if (Radio_signal_strength(src)) {
-    Pinging = true;
+    Pinging = 2;
   } else {
-    Pinging = false;
+    Pinging = 1;
   }
 }
 
@@ -153,9 +162,28 @@ void transmitting(struct state * state) {
   printf("%s \n", __func__);
   nullnet_set_input_callback(transmitting_callback);
   if(Acknowledged) {
-    state->next = init;
-    state->sequenceNumber++;
+    if(state->sequenceNumber == 3) {
+      state->timeoutCycles = 1250;
+      state->next = init;
+    } else {
+      Acknowledged = false;
+      state->sequenceNumber++;
+      if (state->relaying) 
+        sendPayload(addr_nodeB,state->sequenceNumber);
+      else 
+        sendPayload(addr_nodeC,state->sequenceNumber);
+      etimer_set(&periodic_timer, state->timeoutCycles);
+      state->next = transmitting;
+    }
     etimer_set(&periodic_timer, state->timeoutCycles);
+  } else if (state->sequenceNumber == 1 && !state->transmitting) {
+      state->transmitting = true;
+      if (state->relaying) 
+        sendPayload(addr_nodeB,state->sequenceNumber);
+      else 
+        sendPayload(addr_nodeC,state->sequenceNumber);
+      etimer_set(&periodic_timer, state->timeoutCycles);
+      state->next = transmitting;
   }  else if (state->timeoutCounter < TIMEOUT_COUNTER_LIMIT && !Notacknowledged) {
       state->timeoutCycles = state->timeoutCycles * 2;
       state->timeoutCounter++;
@@ -186,60 +214,86 @@ void transmitting(struct state * state) {
     state->relaying = !state->relaying;
     state->timeoutCounter = 0;
     state->nackCounter = 0;
-    state->timeoutCycles = 20;
+    state->transmitting = false;
+    state->timeoutCycles = INITIAL_TIMEOUT;
     state->next = pinging;
+    Pinging = 0;
     etimer_set(&periodic_timer, state->timeoutCycles);
   }
 }
 
 void pinging(struct state * state) {
  printf("%s \n", __func__);
- if (Pinging) {
-   printf("Setting next state to transmtting \n");
-   state->next = transmitting;
-   state->timeoutCounter = 0;
-   state->timeoutCycles = 20;
-   etimer_set(&periodic_timer, state->timeoutCycles);
- } else if (state->timeoutCounter < TIMEOUT_COUNTER_LIMIT) {
-      state->timeoutCycles = state->timeoutCycles * 2;
-      state->timeoutCounter++;
-      uint8_t payloadData = 1; 
-      nullnet_buf = (uint8_t *)&payloadData;
 
-      nullnet_len = sizeof(payloadData);
-      nullnet_set_input_callback(pinging_callback);
-      if (state->relaying) 
-        NETSTACK_NETWORK.output(&addr_nodeB);
-      else 
-        NETSTACK_NETWORK.output(&addr_nodeC);
-      
-      etimer_set(&periodic_timer, state->timeoutCycles);
-      state->next = pinging;
-      LOG_INFO("Timeout cycles: %i timeout counter: %i clock_time: %lu relaying: %d \n",state->timeoutCycles,state->timeoutCounter,clock_time(),state->relaying);
+ if (Pinging == 2) {
+    printf("Setting next state to transmtting \n");
+    state->next = transmitting;
+    state->transmitting = false;
+    state->timeoutCounter = 0;
+    state->timeoutCycles = INITIAL_TIMEOUT;
+    etimer_set(&periodic_timer, state->timeoutCycles);
+ } else if (!state->transmitting && Pinging == 0) {
+    state->transmitting = true;
+    uint8_t payloadData = 1; 
+    nullnet_buf = (uint8_t *)&payloadData;
+
+    nullnet_len = sizeof(payloadData);
+    nullnet_set_input_callback(pinging_callback);
+    if (state->relaying) 
+      NETSTACK_NETWORK.output(&addr_nodeB);
+    else 
+      NETSTACK_NETWORK.output(&addr_nodeC);
+    etimer_set(&periodic_timer, state->timeoutCycles);
+ } else if (state->timeoutCounter < TIMEOUT_COUNTER_LIMIT && Pinging == 0) {
+    state->timeoutCycles = state->timeoutCycles * 2;
+    state->timeoutCounter++;
+    uint8_t payloadData = 1; 
+    nullnet_buf = (uint8_t *)&payloadData;
+
+    nullnet_len = sizeof(payloadData);
+    nullnet_set_input_callback(pinging_callback);
+    if (state->relaying) 
+      NETSTACK_NETWORK.output(&addr_nodeB);
+    else 
+      NETSTACK_NETWORK.output(&addr_nodeC);
+    
+    etimer_set(&periodic_timer, state->timeoutCycles);
+    state->next = pinging;
+    LOG_INFO("Timeout cycles: %i timeout counter: %i clock_time: %lu relaying: %d \n",state->timeoutCycles,state->timeoutCounter,clock_time(),state->relaying);
+  } else {
+    state->timeoutCounter = 0;
+    if(state->relaying == true) {
+      state->timeoutCycles = 1250;
+      state->next = init;
     } else {
-      state->timeoutCounter = 0;
-      state->timeoutCycles = 20;
-      state->relaying = !state->relaying;
+      state->timeoutCycles = INITIAL_TIMEOUT;
       state->next = pinging;
-      etimer_set(&periodic_timer, state->timeoutCycles);
-      LOG_INFO("Timeout counter limit reached...\n");
+      Pinging = 0;
+      state->relaying = true;
     }
+    
+    etimer_set(&periodic_timer, state->timeoutCycles);
+    LOG_INFO("Timeout counter limit reached...\n");
+  }
 }
 void init(struct state * state)
 {
     printf("%s \n", __func__);
     
-    state->timeoutCycles = 20; 
+    state->timeoutCycles = INITIAL_TIMEOUT; 
     state->timeoutCounter = 0;
     state->nackCounter = 0;
+    state->sequenceNumber = 1;
     state->relaying = false;
+    state->transmitting = false;
+    Pinging = 0;
     Acknowledged = false;
     Notacknowledged = false;
     etimer_set(&periodic_timer, state->timeoutCycles);
     state->next = pinging;
 }
 
-static struct state state = { init, 0, 0, false, 20 };
+static struct state state = { init, 0, 0, false, INITIAL_TIMEOUT, false };
 PROCESS_THREAD(nodeA, ev, data)
 {
     
