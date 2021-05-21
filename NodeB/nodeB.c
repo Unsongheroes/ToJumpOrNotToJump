@@ -22,8 +22,8 @@ static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0
 static linkaddr_t addr_Sender;
 //static clock_time_t timelimit = 0;
 static bool checksum = false;
-static bool pinging = false;
-static bool relaying = false;
+static bool isPinging = false;
+static bool isRelaying = false;
 static JumpPackage payload;
 static struct etimer periodic_timer;
 /* -----------------------------         ----------------------------------- */
@@ -169,17 +169,18 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
   nullnet_buf = (uint8_t *)&payload;
   nullnet_len = sizeof(payload);
   addr_Sender = *src;
-  if(payload == 0) {
-    pinging = true;
-  } else {
-    relaying = true;
+  if(payload.payload == 0) {
+    isPinging = true;
+  } else if(payload.length > 0) {
+    checksum = checkChecksum(payload);
+    isRelaying = true;
   }
 
 /*   if(acknowlegde) {
     printSender(payload);
     printReceiver(payload);
     printPayload(payload);
-    checksum = checkChecksum(payload);
+    
   }
   */
 
@@ -209,6 +210,7 @@ void pinging(struct state * state) {}
 void relaying(struct state * state) {
   printf("%s \n", __func__);
   nullnet_set_input_callback(input_callback);
+  
   if(!checksum) {
     sendNack(&addr_Sender);
   } else {
@@ -218,49 +220,9 @@ void relaying(struct state * state) {
     nullnet_set_input_callback(ack_callback);
     etimer_set(&periodic_timer, state->timeoutCycles);
   }
-  if(!acknowlegde) {
+  if(isPinging) {
     sendAck(&addr_Sender);
   }
-  // nullnet_set_input_callback(transmitting_callback);
-
-/*   if(Acknowledged) {
-    state->next = init;
-    state->sequenceNumber++;
-    etimer_set(&periodic_timer, state->timeoutCycles);
-  }  else if (state->timeoutCounter < TIMEOUT_COUNTER_LIMIT && !Notacknowledged) {
-      state->timeoutCycles = state->timeoutCycles * 2;
-      state->timeoutCounter++;
-      if (state->relaying) 
-        sendPayload(addr_nodeB,state->sequenceNumber);
-      else 
-        sendPayload(addr_nodeC,state->sequenceNumber);
-      etimer_set(&periodic_timer, state->timeoutCycles);
-      state->next = transmitting;
-      LOG_INFO("Timeout cycles: %i timeout counter: %i clock_time: %lu \n",state->timeoutCycles,state->timeoutCounter,clock_time());
-  } else if (state->nackCounter < NACK_COUNTER_LIMIT && Notacknowledged) {
-      state->nackCounter++;
-      LOG_INFO("nack counter: %i clock_time: %lu \n",state->nackCounter,clock_time());
-      
-      Notacknowledged = false;
-      if (state->relaying) 
-        sendPayload(addr_nodeB,state->sequenceNumber);
-      else 
-        sendPayload(addr_nodeC,state->sequenceNumber);
-
-      state->next = transmitting;
-      etimer_set(&periodic_timer, state->timeoutCycles);
-      
-  } else {
-    LOG_INFO("Timeout or nack limit reached go ping. Relaying: %d\n",state->relaying);
-    Acknowledged = false;
-    Notacknowledged = false;
-    state->relaying = !state->relaying;
-    state->timeoutCounter = 0;
-    state->nackCounter = 0;
-    state->timeoutCycles = 20;
-    state->next = pinging;
-    etimer_set(&periodic_timer, state->timeoutCycles);
-  } */
 }
 
 void init(struct state * state)
