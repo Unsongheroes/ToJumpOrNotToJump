@@ -23,7 +23,7 @@ static linkaddr_t addr_Sender;
 //static clock_time_t timelimit = 0;
 static bool checksum = false;
 static bool isPinging = false;
-static bool isRelaying = false;
+// static bool isRelaying = false;
 static JumpPackage payload;
 static struct etimer periodic_timer;
 /* -----------------------------         ----------------------------------- */
@@ -173,7 +173,6 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
     isPinging = true;
   } else if(payload.length > 0) {
     checksum = checkChecksum(payload);
-    isRelaying = true;
   }
 
 /*   if(acknowlegde) {
@@ -204,12 +203,21 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
 }
 
 
-void pinging(struct state * state) {}
+void pinging(struct state * state) {
+  printf("%s \n", __func__);
+  nullnet_set_input_callback(input_callback);
+  if(isPinging) {
+    isPinging = false;
+    sendAck(&addr_Sender);
+  } 
+  state->next = relaying;
+  
+}
 
 
 void relaying(struct state * state) {
   printf("%s \n", __func__);
-  nullnet_set_input_callback(input_callback);
+  // nullnet_set_input_callback(ack_callback);
   
   if(!checksum) {
     sendNack(&addr_Sender);
@@ -219,10 +227,12 @@ void relaying(struct state * state) {
 
     nullnet_set_input_callback(ack_callback);
     etimer_set(&periodic_timer, state->timeoutCycles);
+    state->next = pinging;
   }
-  if(isPinging) {
-    sendAck(&addr_Sender);
-  }
+ /*  if(isPinging) {
+    state->next = pinging;
+    // sendAck(&addr_Sender);
+  } */
 }
 
 void init(struct state * state)
@@ -235,11 +245,10 @@ void init(struct state * state)
     state->timeoutCycles = 20; 
     state->timeoutCounter = 0;
     state->nackCounter = 0;
-    pinging = false;
-    relaying = false;
+    isPinging = false;
     etimer_set(&periodic_timer, state->timeoutCycles);
     
-    state->next = relaying;
+    state->next = pinging;
 }
 
 static struct state state = { init, 0, 0, 5 };
