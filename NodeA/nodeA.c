@@ -11,6 +11,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "sys/energest.h"
+
 
 /* Log configuration */
 #include "sys/log.h"
@@ -64,6 +66,12 @@ state_fn init, pinging, transmitting; //the different states for the mote
 PROCESS(nodeA, "Node A - Sender");
 AUTOSTART_PROCESSES(&nodeA);
 /* ----------------------------- Helper ----------------------------------- */
+/* static unsigned long to_seconds(uint64_t time)
+{
+  return (unsigned long)(time / ENERGEST_SECOND);
+} */
+
+
 int checksum(uint8_t* buffer, size_t len)
 {
       size_t i;
@@ -139,7 +147,7 @@ void transmitting_callback(const void *data, uint16_t len, const linkaddr_t *src
       LOG_INFO("Acknowledged received from: ");
       LOG_INFO_LLADDR(src);
       LOG_INFO_("\n");
-    } else if (ack == -1) {
+    } else if (ack == 255) {
       Notacknowledged = true;
       LOG_INFO("Not acknowledged received from: ");
       LOG_INFO_LLADDR(src);
@@ -239,8 +247,10 @@ void pinging(struct state * state) {
 
     nullnet_len = sizeof(payloadData);
     nullnet_set_input_callback(pinging_callback);
-    if (state->relaying) 
+    if (state->relaying) {
+      printf("data: %u \n", *nullnet_buf);
       NETSTACK_NETWORK.output(&addr_nodeB);
+    }
     else 
       NETSTACK_NETWORK.output(&addr_nodeC);
     etimer_set(&periodic_timer, state->timeoutCycles);
@@ -252,8 +262,10 @@ void pinging(struct state * state) {
 
     nullnet_len = sizeof(payloadData);
     nullnet_set_input_callback(pinging_callback);
-    if (state->relaying) 
+    if (state->relaying) {
+      printf("data: %u \n", *nullnet_buf);
       NETSTACK_NETWORK.output(&addr_nodeB);
+    }
     else 
       NETSTACK_NETWORK.output(&addr_nodeC);
     
@@ -307,6 +319,22 @@ PROCESS_THREAD(nodeA, ev, data)
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer)); 	// Wait until time is expired
         if (state.next != NULL) // handle next state if not null
             state.next(&state);
+
+         /* Update all energest times. */
+        /* energest_flush();
+
+        printf("\nEnergest:\n");
+        printf(" CPU          %4lus LPM      %4lus DEEP LPM %4lus  Total time %lus\n",
+           to_seconds(energest_type_time(ENERGEST_TYPE_CPU)),
+           to_seconds(energest_type_time(ENERGEST_TYPE_LPM)),
+           to_seconds(energest_type_time(ENERGEST_TYPE_DEEP_LPM)),
+           to_seconds(ENERGEST_GET_TOTAL_TIME()));
+        printf(" Radio LISTEN %4lus TRANSMIT %4lus OFF      %4lus\n",
+           to_seconds(energest_type_time(ENERGEST_TYPE_LISTEN)),
+           to_seconds(energest_type_time(ENERGEST_TYPE_TRANSMIT)),
+           to_seconds(ENERGEST_GET_TOTAL_TIME()
+                      - energest_type_time(ENERGEST_TYPE_TRANSMIT)
+                      - energest_type_time(ENERGEST_TYPE_LISTEN))); */
         //etimer_reset(&periodic_timer);
        /*  if (timeoutCounter < TIMEOUT_COUNTER_LIMIT) {
           timeoutCycles = timeoutCycles * 2;
