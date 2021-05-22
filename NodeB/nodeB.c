@@ -21,8 +21,29 @@ static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0
 //static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
 static linkaddr_t addr_Sender;
 //static clock_time_t timelimit = 0;
+static bool checksum = false;
+static bool isPinging = false;
+// static bool isRelaying = false;
+static JumpPackage payload;
 static struct etimer periodic_timer;
 /* -----------------------------         ----------------------------------- */
+// State machine setup
+struct state;
+typedef void state_fn(struct state *);
+struct state
+{
+    state_fn * next; // next pointer to the next state
+    int timeoutCounter;
+    int nackCounter;
+    int sequenceNumber;
+    int timeoutCycles;
+    //linkaddr_t receiver;
+};
+state_fn init,pinging, relaying; //the different states for the mote
+/* -----------------------------         ----------------------------------- */
+
+
+
 PROCESS(nodeB, "Node B - Sender");
 AUTOSTART_PROCESSES(&nodeB);
 /* ----------------------------- Helper ----------------------------------- */
@@ -108,7 +129,7 @@ void sendAck(const linkaddr_t *src) {
 }
 
 void sendNack(const linkaddr_t *src) {
-  uint8_t acknowledge = 0;
+  uint8_t acknowledge = -1;
   nullnet_buf = (uint8_t *)&acknowledge;
   nullnet_len = sizeof(acknowledge);
   NETSTACK_NETWORK.output(src);
@@ -132,7 +153,7 @@ void ack_callback(const void *data, uint16_t len, const linkaddr_t *src, const l
     LOG_INFO_("\n");
     
     sendAck(&addr_Sender);
-  } else {
+  } else if(ack == -1) {
     LOG_INFO("Not acknowledged received from: ");
     LOG_INFO_LLADDR(src);
     LOG_INFO_("\n");
@@ -143,22 +164,32 @@ void ack_callback(const void *data, uint16_t len, const linkaddr_t *src, const l
 
 void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
 {
-
-  JumpPackage payload;
   memcpy(&payload, data, sizeof(payload));
+
   nullnet_buf = (uint8_t *)&payload;
   nullnet_len = sizeof(payload);
-
-
   addr_Sender = *src;
-  if (payload.length > 0) { //received payload
-      /* if(errorOrNot()) {
-        sendNack(&addr_Sender);
-      } */
+  if(payload.payload == 0) {
+    isPinging = true;
+  } else if(payload.length > 0) {
+    checksum = checkChecksum(payload);
+  }
+
+/*   if(acknowlegde) {
+    printSender(payload);
+    printReceiver(payload);
+    printPayload(payload);
+    
+  }
+  */
+
+/*   if (payload.length > 0) { //received payload
+      // if(errorOrNot()) {
+      //  sendNack(&addr_Sender);
+      // }
       printSender(payload);
       printReceiver(payload);
       printPayload(payload);
-  
     if(!checkChecksum(payload)){
       sendNack(&addr_Sender);
     } else {
@@ -168,25 +199,71 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
     }
   } else { // received ping
     sendAck(&addr_Sender);
-  }
+  } */
 }
 
 
-/* ----------------------------- Callbacks ----------------------------------- */
+void pinging(struct state * state) {
+  printf("%s \n", __func__);
+  nullnet_set_input_callback(input_callback);
+  if(isPinging) {
+    isPinging = false;
+    sendAck(&addr_Sender);
+  } 
+  state->next = relaying;
+  
+}
 
 
+void relaying(struct state * state) {
+  printf("%s \n", __func__);
+  // nullnet_set_input_callback(ack_callback);
+  
+  if(!checksum) {
+    sendNack(&addr_Sender);
+  } else {
+    
+    NETSTACK_NETWORK.output(&addr_nodeC);
+
+    nullnet_set_input_callback(ack_callback);
+    etimer_set(&periodic_timer, state->timeoutCycles);
+    state->next = pinging;
+  }
+ /*  if(isPinging) {
+    state->next = pinging;
+    // sendAck(&addr_Sender);
+  } */
+}
+
+void init(struct state * state)
+{
+    printf("%s \n", __func__);
+    JumpPackage payload;
+    nullnet_buf = (uint8_t *)&payload;
+    nullnet_len = sizeof(payload);
+
+    state->timeoutCycles = 20; 
+    state->timeoutCounter = 0;
+    state->nackCounter = 0;
+    isPinging = false;
+    etimer_set(&periodic_timer, state->timeoutCycles);
+    
+    state->next = pinging;
+}
+
+static struct state state = { init, 0, 0, 5 };
 PROCESS_THREAD(nodeB, ev, data)
 {
   
 
-  JumpPackage payload;
+ /*  JumpPackage payload;
   nullnet_buf = (uint8_t *)&payload;
-  nullnet_len = sizeof(payload);
-  nullnet_set_input_callback(input_callback);
+  nullnet_len = sizeof(payload); 
+  nullnet_set_input_callback(input_callback); */
   
   PROCESS_BEGIN();
     printf("STARTING NODE B,,, \n");
-    etimer_set(&periodic_timer, TIMEOUTLIMIT);
+    // etimer_set(&periodic_timer, TIMEOUTLIMIT);
 
   SENSORS_ACTIVATE(button_sensor);
     while (1)

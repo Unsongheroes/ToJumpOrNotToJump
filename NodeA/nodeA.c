@@ -139,7 +139,7 @@ void transmitting_callback(const void *data, uint16_t len, const linkaddr_t *src
       LOG_INFO("Acknowledged received from: ");
       LOG_INFO_LLADDR(src);
       LOG_INFO_("\n");
-    } else if (ack == 0) {
+    } else if (ack == -1) {
       Notacknowledged = true;
       LOG_INFO("Not acknowledged received from: ");
       LOG_INFO_LLADDR(src);
@@ -247,7 +247,7 @@ void pinging(struct state * state) {
  } else if (state->timeoutCounter < TIMEOUT_COUNTER_LIMIT && Pinging == 0) {
     state->timeoutCycles = state->timeoutCycles * 2;
     state->timeoutCounter++;
-    uint8_t payloadData = 1; 
+    uint8_t payloadData = 0; 
     nullnet_buf = (uint8_t *)&payloadData;
 
     nullnet_len = sizeof(payloadData);
