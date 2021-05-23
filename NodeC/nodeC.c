@@ -42,7 +42,7 @@ int checksum(uint8_t* buffer, size_t len)
 
 bool errorOrNot() {
   int r = rand() % 10;
-  if (r < 5) {
+  if (r > 10) {
     return true;
   } else {
     return false;
