@@ -1,0 +1,8 @@
+#ifndef PROJECT_CONFH
+#define PROJECT_CONFH
+
+#define CSMA_CONF_MAX_FRAME_RETRIES 0
+
+#endif /* PROJECT_CONFH */
+
+
