@@ -76,18 +76,21 @@ AUTOSTART_PROCESSES(&nodeA);
 PROCESS_THREAD(nodeA, ev, data)
 {
     PROCESS_BEGIN();
-    
+    static struct etimer periodic_timer;
+    static int index = 0;
     printf("STARTING NODE A,,, \n"); 
     nullnet_set_input_callback(input_callback);
-
+    etimer_set(&periodic_timer, 20);
     SENSORS_ACTIVATE(button_sensor);
     
     while(1){
-
-        sendPayload();
-
-        PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
+        if (index < 100) {
+          sendPayload();
+        }
+        
+        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
         printf("Number of ACKs received: %i", ACK_n);
+        etimer_reset(&periodic_timer, 20);
     }
     PROCESS_END();
 }
