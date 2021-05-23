@@ -5,6 +5,8 @@
 
 #include "net/netstack.h"
 
+#include "sys/energest.h"
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,6 +14,11 @@
 #include "sys/log.h"
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_INFO
+
+static unsigned long to_seconds(uint64_t time)
+{
+  return (unsigned long)(time / ENERGEST_SECOND);
+}
 
 int checksum(uint8_t* buffer, size_t len)
 {
@@ -107,15 +114,33 @@ AUTOSTART_PROCESSES(&nodeC);
 
 PROCESS_THREAD(nodeC, ev, data)
 {
+  static struct etimer periodic_timer;
     PROCESS_BEGIN();
     
     printf("STARTING NODE C,,, \n");
     nullnet_set_input_callback(input_callback);
+       
 
     SENSORS_ACTIVATE(button_sensor);
-
+    etimer_set(&periodic_timer, CLOCK_SECOND * 10);
     while (1){
-        PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
+      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
+    etimer_reset(&periodic_timer);
+      /* Update all energest times. */
+        energest_flush();
+
+        printf("\nEnergest:\n");
+        printf(" CPU          %4lus LPM      %4lus DEEP LPM %4lus  Total time %lus\n",
+           to_seconds(energest_type_time(ENERGEST_TYPE_CPU)),
+           to_seconds(energest_type_time(ENERGEST_TYPE_LPM)),
+           to_seconds(energest_type_time(ENERGEST_TYPE_DEEP_LPM)),
+           to_seconds(ENERGEST_GET_TOTAL_TIME()));
+        printf(" Radio LISTEN %4lus TRANSMIT %4lus OFF      %4lus\n",
+           to_seconds(energest_type_time(ENERGEST_TYPE_LISTEN)),
+           to_seconds(energest_type_time(ENERGEST_TYPE_TRANSMIT)),
+           to_seconds(ENERGEST_GET_TOTAL_TIME()
+                      - energest_type_time(ENERGEST_TYPE_TRANSMIT)
+                      - energest_type_time(ENERGEST_TYPE_LISTEN)));
     }
     PROCESS_END();
 }

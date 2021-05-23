@@ -2,6 +2,7 @@
 #include "cc2420.h"
 
 #include "dev/button-sensor.h"
+#include "sys/energest.h"
 
 #include "net/netstack.h"
 
@@ -15,8 +16,14 @@
 
 int ACK_n = 0;
 
-//static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
-static linkaddr_t cooja_nodeC = {{0x02, 0x02, 0x02, 0x00, 0x02, 0x74, 0x12, 0x00}};
+static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+//static linkaddr_t cooja_nodeC = {{0x02, 0x02, 0x02, 0x00, 0x02, 0x74, 0x12, 0x00}};
+
+static unsigned long to_seconds(uint64_t time)
+{
+  return (unsigned long)(time / ENERGEST_SECOND);
+}
+
 
 int checksum(uint8_t* buffer, size_t len)
 {
@@ -43,7 +50,7 @@ void sendPayload(){
     nullnet_len = sizeof(payload);
   
 
-    NETSTACK_NETWORK.output(&cooja_nodeC);
+    NETSTACK_NETWORK.output(&addr_nodeC);
     size_t i;
     for ( i = 0; i < 64; i++)
     {
@@ -91,7 +98,27 @@ PROCESS_THREAD(nodeA, ev, data)
         
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
         printf("Number of ACKs received: %i", ACK_n);
+          /* Update all energest times. */
+        energest_flush();
+
+        printf("\nEnergest:\n");
+        printf(" CPU          %4lus LPM      %4lus DEEP LPM %4lus  Total time %lus\n",
+           to_seconds(energest_type_time(ENERGEST_TYPE_CPU)),
+           to_seconds(energest_type_time(ENERGEST_TYPE_LPM)),
+           to_seconds(energest_type_time(ENERGEST_TYPE_DEEP_LPM)),
+           to_seconds(ENERGEST_GET_TOTAL_TIME()));
+        printf(" Radio LISTEN %4lus TRANSMIT %4lus OFF      %4lus\n",
+           to_seconds(energest_type_time(ENERGEST_TYPE_LISTEN)),
+           to_seconds(energest_type_time(ENERGEST_TYPE_TRANSMIT)),
+           to_seconds(ENERGEST_GET_TOTAL_TIME()
+                      - energest_type_time(ENERGEST_TYPE_TRANSMIT)
+                      - energest_type_time(ENERGEST_TYPE_LISTEN)));
         etimer_reset(&periodic_timer);
+
+
+
+
+
     }
     PROCESS_END();
 }
