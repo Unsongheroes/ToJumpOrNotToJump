@@ -2,6 +2,7 @@
 #include "cc2420.h"
 
 #include "dev/button-sensor.h"
+#include "sys/energest.h"
 
 #include "net/netstack.h"
 
@@ -15,8 +16,14 @@
 
 int ACK_n = 0;
 
-//static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
-static linkaddr_t cooja_nodeC = {{0x02, 0x02, 0x02, 0x00, 0x02, 0x74, 0x12, 0x00}};
+static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+//static linkaddr_t cooja_nodeC = {{0x02, 0x02, 0x02, 0x00, 0x02, 0x74, 0x12, 0x00}};
+
+static unsigned long to_10milseconds(uint64_t time)
+{
+  return (unsigned long)(time / 625 /*ENERGEST_SECOND*/);
+}
+
 
 int checksum(uint8_t* buffer, size_t len)
 {
@@ -43,7 +50,8 @@ void sendPayload(){
     nullnet_len = sizeof(payload);
   
 
-    NETSTACK_NETWORK.output(&cooja_nodeC);
+    NETSTACK_NETWORK.output(&addr_nodeC);
+    energest_flush();
     size_t i;
     for ( i = 0; i < 64; i++)
     {
@@ -80,17 +88,42 @@ PROCESS_THREAD(nodeA, ev, data)
     static int index = 0;
     printf("STARTING NODE A,,, \n"); 
     nullnet_set_input_callback(input_callback);
-    etimer_set(&periodic_timer, 20);
+    etimer_set(&periodic_timer, 60);
     SENSORS_ACTIVATE(button_sensor);
     
     while(1){
         if (index < 100) {
           sendPayload();
+          index++;
         }
         
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
         printf("Number of ACKs received: %i", ACK_n);
-        etimer_reset(&periodic_timer, 20);
+          /* Update all energest times. */
+        energest_flush();
+
+        printf("\nEnergest:\n");
+        /* printf(" CPU          %" PRId64 " LPM      %" PRId64 " DEEP LPM   %" PRId64 " Total time %" PRId64 "\n", energest_type_time(ENERGEST_TYPE_CPU),
+           energest_type_time(ENERGEST_TYPE_LPM),
+           energest_type_time(ENERGEST_TYPE_DEEP_LPM),
+           ENERGEST_GET_TOTAL_TIME()); */
+        printf("10ms *: CPU          %4lums LPM      %4lus DEEP LPM %4lums  Total time %lums\n",
+           to_10milseconds(energest_type_time(ENERGEST_TYPE_CPU)),
+           to_10milseconds(energest_type_time(ENERGEST_TYPE_LPM)),
+           to_10milseconds(energest_type_time(ENERGEST_TYPE_DEEP_LPM)),
+           to_10milseconds(ENERGEST_GET_TOTAL_TIME()));
+        printf("10ms *: Radio LISTEN %4lums TRANSMIT %4lums OFF      %4lums\n",
+           to_10milseconds(energest_type_time(ENERGEST_TYPE_LISTEN)),
+           to_10milseconds(energest_type_time(ENERGEST_TYPE_TRANSMIT)),
+           to_10milseconds(ENERGEST_GET_TOTAL_TIME()
+                      - energest_type_time(ENERGEST_TYPE_TRANSMIT)
+                      - energest_type_time(ENERGEST_TYPE_LISTEN)));
+        etimer_reset(&periodic_timer);
+
+
+
+
+
     }
     PROCESS_END();
 }

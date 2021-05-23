@@ -66,10 +66,10 @@ state_fn init, pinging, transmitting; //the different states for the mote
 PROCESS(nodeA, "Node A - Sender");
 AUTOSTART_PROCESSES(&nodeA);
 /* ----------------------------- Helper ----------------------------------- */
-/* static unsigned long to_seconds(uint64_t time)
+static unsigned long to_seconds(uint64_t time)
 {
   return (unsigned long)(time / ENERGEST_SECOND);
-} */
+}
 
 
 int checksum(uint8_t* buffer, size_t len)
@@ -321,7 +321,7 @@ PROCESS_THREAD(nodeA, ev, data)
             state.next(&state);
 
          /* Update all energest times. */
-        /* energest_flush();
+        energest_flush();
 
         printf("\nEnergest:\n");
         printf(" CPU          %4lus LPM      %4lus DEEP LPM %4lus  Total time %lus\n",
@@ -334,7 +334,7 @@ PROCESS_THREAD(nodeA, ev, data)
            to_seconds(energest_type_time(ENERGEST_TYPE_TRANSMIT)),
            to_seconds(ENERGEST_GET_TOTAL_TIME()
                       - energest_type_time(ENERGEST_TYPE_TRANSMIT)
-                      - energest_type_time(ENERGEST_TYPE_LISTEN))); */
+                      - energest_type_time(ENERGEST_TYPE_LISTEN)));
         //etimer_reset(&periodic_timer);
        /*  if (timeoutCounter < TIMEOUT_COUNTER_LIMIT) {
           timeoutCycles = timeoutCycles * 2;
