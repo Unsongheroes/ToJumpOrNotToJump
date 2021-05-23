@@ -86,11 +86,12 @@ PROCESS_THREAD(nodeA, ev, data)
     while(1){
         if (index < 100) {
           sendPayload();
+          index++;
         }
         
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
         printf("Number of ACKs received: %i", ACK_n);
-        etimer_reset(&periodic_timer, 20);
+        etimer_reset(&periodic_timer);
     }
     PROCESS_END();
 }
