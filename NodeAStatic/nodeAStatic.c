@@ -51,7 +51,7 @@ void sendPayload(){
   
 
     NETSTACK_NETWORK.output(&addr_nodeC);
-    energest_flush();
+    //energest_flush();
     size_t i;
     for ( i = 0; i < 64; i++)
     {
