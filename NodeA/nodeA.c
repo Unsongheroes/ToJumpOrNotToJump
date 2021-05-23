@@ -242,7 +242,7 @@ void pinging(struct state * state) {
     etimer_set(&periodic_timer, state->timeoutCycles);
  } else if (!state->transmitting && Pinging == 0) {
     state->transmitting = true;
-    uint8_t payloadData = 1; 
+    uint8_t payloadData = 0; 
     nullnet_buf = (uint8_t *)&payloadData;
 
     nullnet_len = sizeof(payloadData);
