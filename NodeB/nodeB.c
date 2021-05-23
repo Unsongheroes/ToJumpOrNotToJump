@@ -176,8 +176,9 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
   if (received == 0) {
     isPinging = true;
     isRelaying = false;
+    addr_Sender = *src;
     sendAck(&addr_Sender);
-     addr_Sender = *src;
+     
 
     printf("Received ping from Node A\n");
   } else if( received == 255) {
@@ -185,12 +186,14 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
     LOG_INFO_LLADDR(src);
     LOG_INFO_("\n");
     isPinging = false;
+    isRelaying = false;
     sendNack(&addr_Sender);
   } else if (received == 1 ) {
     LOG_INFO("Acknowledged received from: ");
     LOG_INFO_LLADDR(src);
     LOG_INFO_("\n");
     isPinging = false;
+    isRelaying = false;
     sendAck(&addr_Sender);
   } else {
      addr_Sender = *src;
@@ -273,7 +276,7 @@ void relaying(struct state * state) {
     state->timeoutCycles = 20;
     etimer_set(&periodic_timer, state->timeoutCycles);
   } else */ 
-  if (!isRelaying) {
+  if (isRelaying) {
     if(!messageRelayed) {
       printf("not pinging and implies not messagesrelayed \n");
       sendNack(&addr_Sender);
