@@ -16,8 +16,8 @@
 
 int ACK_n = 0;
 
-static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
-//static linkaddr_t cooja_nodeC = {{0x02, 0x02, 0x02, 0x00, 0x02, 0x74, 0x12, 0x00}};
+//static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+static linkaddr_t addr_nodeC = {{0x03, 0x03, 0x03, 0x00, 0x03, 0x74, 0x12, 0x00}}; // coojas
 
 static unsigned long to_10milseconds(uint64_t time)
 {
@@ -88,7 +88,7 @@ PROCESS_THREAD(nodeA, ev, data)
     static int index = 0;
     printf("STARTING NODE A,,, \n"); 
     nullnet_set_input_callback(input_callback);
-    etimer_set(&periodic_timer, 60);
+    etimer_set(&periodic_timer, 1250);
     SENSORS_ACTIVATE(button_sensor);
     
     while(1){
