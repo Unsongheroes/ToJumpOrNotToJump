@@ -41,6 +41,9 @@ static linkaddr_t addr_nodeC = {{0x03, 0x03, 0x03, 0x00, 0x03, 0x74, 0x12, 0x00}
 //static int nackCounter = 0;
 static bool Acknowledged = false;
 static bool Notacknowledged = false;
+static int counter = 0;
+static int ackCounter = 0;
+static int nackCounter = 0;
 static int Pinging = 0;
 static struct etimer periodic_timer;
 /* -----------------------------         ----------------------------------- */
@@ -66,10 +69,10 @@ state_fn init, pinging, transmitting; //the different states for the mote
 PROCESS(nodeA, "Node A - Sender");
 AUTOSTART_PROCESSES(&nodeA);
 /* ----------------------------- Helper ----------------------------------- */
-static unsigned long to_seconds(uint64_t time)
+/* static unsigned long to_seconds(uint64_t time)
 {
   return (unsigned long)(time / ENERGEST_SECOND);
-}
+} */
 
 
 int checksum(uint8_t* buffer, size_t len)
@@ -145,10 +148,14 @@ void transmitting_callback(const void *data, uint16_t len, const linkaddr_t *src
     
       Acknowledged = true;
       LOG_INFO("Acknowledged received from: ");
+      ackCounter++;
+      counter++;
       LOG_INFO_LLADDR(src);
       LOG_INFO_("\n");
     } else if (ack == 255) {
       Notacknowledged = true;
+      nackCounter++;
+      counter++;
       LOG_INFO("Not acknowledged received from: ");
       LOG_INFO_LLADDR(src);
       LOG_INFO_("\n");
@@ -168,9 +175,12 @@ void pinging_callback(const void *data, uint16_t len, const linkaddr_t *src, con
 
 void transmitting(struct state * state) {
   printf("%s \n", __func__);
+  printf("Acknowledged: %i counter: %i sequence number %i\n", Acknowledged, counter, state->sequenceNumber);
   nullnet_set_input_callback(transmitting_callback);
   if(Acknowledged) {
+    printf("Received acknowledge\n");
     if(state->sequenceNumber == 3) {
+      printf("Sequence ended wait 10 sec.'\n");
       state->timeoutCycles = 1250;
       state->next = init;
     } else {
@@ -183,6 +193,7 @@ void transmitting(struct state * state) {
       etimer_set(&periodic_timer, state->timeoutCycles);
       state->next = transmitting;
     }
+    printf("Starting timer\n");
     etimer_set(&periodic_timer, state->timeoutCycles);
   } else if (state->sequenceNumber == 1 && !state->transmitting) {
       state->transmitting = true;
@@ -313,7 +324,7 @@ PROCESS_THREAD(nodeA, ev, data)
     printf("STARTING NODE A,,, \n"); 
     state.next(&state);
     SENSORS_ACTIVATE(button_sensor);
-    while (1)
+    while (counter < 100)
     {
 //        nullnet_set_input_callback(input_callback);
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer)); 	// Wait until time is expired
@@ -321,7 +332,7 @@ PROCESS_THREAD(nodeA, ev, data)
             state.next(&state);
 
          /* Update all energest times. */
-        energest_flush();
+        /* energest_flush();
 
         printf("\nEnergest:\n");
         printf(" CPU          %4lus LPM      %4lus DEEP LPM %4lus  Total time %lus\n",
@@ -334,7 +345,7 @@ PROCESS_THREAD(nodeA, ev, data)
            to_seconds(energest_type_time(ENERGEST_TYPE_TRANSMIT)),
            to_seconds(ENERGEST_GET_TOTAL_TIME()
                       - energest_type_time(ENERGEST_TYPE_TRANSMIT)
-                      - energest_type_time(ENERGEST_TYPE_LISTEN)));
+                      - energest_type_time(ENERGEST_TYPE_LISTEN))); */
         //etimer_reset(&periodic_timer);
        /*  if (timeoutCounter < TIMEOUT_COUNTER_LIMIT) {
           timeoutCycles = timeoutCycles * 2;
@@ -367,7 +378,7 @@ PROCESS_THREAD(nodeA, ev, data)
           Acknowledged = 0;
         } */
     }
- 
+  LOG_INFO("Nack received: %i  Ack received: %i", nackCounter, ackCounter);
   PROCESS_END();
 }
 
