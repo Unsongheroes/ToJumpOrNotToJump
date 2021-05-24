@@ -16,11 +16,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include "sys/energest.h"
 #include "sys/log.h"
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_INFO
-
+static unsigned long to_10milseconds(uint64_t time)
+{
+  return (unsigned long)(time / 62.5 );
+}
 int checksum(uint8_t* buffer, size_t len)
 {
       size_t i;
@@ -50,14 +53,14 @@ bool errorOrNot() {
 }
 
 bool checkChecksum(JumpPackage payload){
-  LOG_INFO("Checking checksum: %i\n",payload.checksum );
+  //LOG_INFO("Checking checksum: %i\n",payload.checksum );
   int pchecksum = checksum(payload.payload, payload.length);
   if(pchecksum == payload.checksum){
-    printf("Checksum correct\n");
+    //printf("Checksum correct\n");
     return true;
   }
   else{
-    printf("Checksum did not match payload\n");
+    //printf("Checksum did not match payload\n");
     return false;
   }
 
@@ -94,12 +97,12 @@ void sendAck(const linkaddr_t *src) {
   uint8_t acknowledge = 1;
   nullnet_buf = (uint8_t *)&acknowledge;
   nullnet_len = sizeof(acknowledge);
-  LOG_INFO("\n");
-  LOG_INFO_LLADDR(src);
-  LOG_INFO("\n");
+  //LOG_INFO("\n");
+  //LOG_INFO_LLADDR(src);
+  //LOG_INFO("\n");
   linkaddr_t tmp = *src;
   NETSTACK_NETWORK.output(&tmp);
-  LOG_INFO("Acknowledge sent!\n");
+  //LOG_INFO("Acknowledge sent!\n");
 }
 
 void sendNack(const linkaddr_t *src) {
@@ -108,7 +111,7 @@ void sendNack(const linkaddr_t *src) {
   nullnet_len = sizeof(acknowledge);
   linkaddr_t tmp = *src;
   NETSTACK_NETWORK.output(&tmp);
-  LOG_INFO("Not acknowledge sent!\n");
+  //LOG_INFO("Not acknowledge sent!\n");
 }
 
 void input_callback(const void *data, uint16_t len,
@@ -123,9 +126,9 @@ void input_callback(const void *data, uint16_t len,
     if(errorOrNot()){
       sendNack(src);
     }
-    printSender(payload);
-    printReceiver(payload);
-    printPayload(payload);
+    //printSender(payload);
+    //printReceiver(payload);
+    //printPayload(payload);
     if (checkChecksum(payload)) {
       sendAck(src);
     }
@@ -135,6 +138,8 @@ void input_callback(const void *data, uint16_t len,
   } else { // ping received
       sendAck(src);
   }
+
+   
 }
 
 /*---------------------------------------------------------------------------*/
@@ -152,6 +157,21 @@ PROCESS_THREAD(main_process, ev, data)
 
   while(1){
     PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
+    energest_flush();
+
+    printf("\nEnergest:\n");
+
+    printf("10ms *: CPU          %4lums LPM      %4lus DEEP LPM %4lums  Total time %lums\n",
+        to_10milseconds(energest_type_time(ENERGEST_TYPE_CPU)),
+        to_10milseconds(energest_type_time(ENERGEST_TYPE_LPM)),
+        to_10milseconds(energest_type_time(ENERGEST_TYPE_DEEP_LPM)),
+        to_10milseconds(ENERGEST_GET_TOTAL_TIME()));
+    printf("10ms *: Radio LISTEN %4lums TRANSMIT %4lums OFF      %4lums\n",
+        to_10milseconds(energest_type_time(ENERGEST_TYPE_LISTEN)),
+        to_10milseconds(energest_type_time(ENERGEST_TYPE_TRANSMIT)),
+        to_10milseconds(ENERGEST_GET_TOTAL_TIME()
+                  - energest_type_time(ENERGEST_TYPE_TRANSMIT)
+                  - energest_type_time(ENERGEST_TYPE_LISTEN)));
   }
   PROCESS_END();
 }

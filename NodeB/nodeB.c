@@ -17,8 +17,8 @@
 #define SEND_INTERVAL (8 * CLOCK_SECOND)
 #define TIMEOUTLIMIT 60
 //static linkaddr_t addr_nodeB =     {{0x77, 0xb7, 0x7b, 0x11, 0x0, 0x74, 0x12, 0x00 }};
-static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
-//static linkaddr_t addr_nodeC = {{0x03, 0x03, 0x03, 0x00, 0x03, 0x74, 0x12, 0x00}}; // cooja
+//static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+static linkaddr_t addr_nodeC = {{0x03, 0x03, 0x03, 0x00, 0x03, 0x74, 0x12, 0x00}}; // cooja
 //static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
 static linkaddr_t addr_Sender;
 //static clock_time_t timelimit = 0;
@@ -50,7 +50,7 @@ AUTOSTART_PROCESSES(&nodeB);
 /* ----------------------------- Helper ----------------------------------- */
 static unsigned long to_10milseconds(uint64_t time)
 {
-  return (unsigned long)(time / 625 /*ENERGEST_SECOND*/);
+  return (unsigned long)(time / 62.5 );
 }
 bool errorOrNot() {
   int r = rand() % 10;
@@ -81,14 +81,14 @@ int checksum(uint8_t* buffer, size_t len)
 }
 
 bool checkChecksum(JumpPackage payload){
-  LOG_INFO("Checking checksum: %i\n",payload.checksum );
+  //LOG_INFO("Checking checksum: %i\n",payload.checksum );
     int pchecksum = checksum(payload.payload, payload.length);
     if(pchecksum == payload.checksum){
-      printf("Checksum correct\n");
+      //printf("Checksum correct\n");
       return true;
     }
     else{
-      printf("Checksum did not match payload\n");
+      //printf("Checksum did not match payload\n");
       return false;
     }
 }
@@ -130,9 +130,9 @@ void sendAck(const linkaddr_t *src) {
   nullnet_len = sizeof(acknowledge);
   linkaddr_t tmp = *src;
   NETSTACK_NETWORK.output(&tmp);
-  LOG_INFO("Acknowledge sent!\n");
-  LOG_INFO_LLADDR(src);
-  LOG_INFO("\n " );
+  //LOG_INFO("Acknowledge sent!\n");
+  //LOG_INFO_LLADDR(src);
+  //LOG_INFO("\n " );
 }
 
 void sendNack(const linkaddr_t *src) {
@@ -141,9 +141,9 @@ void sendNack(const linkaddr_t *src) {
   nullnet_len = sizeof(acknowledge);
   linkaddr_t tmp = *src;
   NETSTACK_NETWORK.output(&tmp);
-  LOG_INFO("Not acknowledge sent!\n");
-  LOG_INFO_LLADDR(src);
-  LOG_INFO("\n " );
+  //LOG_INFO("Not acknowledge sent!\n");
+  //LOG_INFO_LLADDR(src);
+  //LOG_INFO("\n " );
 }
 
 /* ----------------------------- Callbacks ----------------------------------- */
@@ -177,7 +177,7 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
   uint8_t received = 99;
     
   memcpy(&received, data, sizeof(received));
-  printf("Received: %d\n",received); 
+  //printf("Received: %d\n",received); 
   if (received == 0) {
     isPinging = true;
     isRelaying = false;
@@ -185,18 +185,18 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
     sendAck(&addr_Sender);
      
 
-    printf("Received ping from Node A\n");
+    //printf("Received ping from Node A\n");
   } else if( received == 255) {
-      LOG_INFO("Not acknowledged received from: ");
-    LOG_INFO_LLADDR(src);
-    LOG_INFO_("\n");
+    //  LOG_INFO("Not acknowledged received from: ");
+    //LOG_INFO_LLADDR(src);
+    //LOG_INFO_("\n");
     isPinging = false;
     isRelaying = false;
     sendNack(&addr_Sender);
   } else if (received == 1 ) {
-    LOG_INFO("Acknowledged received from: ");
-    LOG_INFO_LLADDR(src);
-    LOG_INFO_("\n");
+    //LOG_INFO("Acknowledged received from: ");
+    //LOG_INFO_LLADDR(src);
+    //LOG_INFO_("\n");
     isPinging = false;
     isRelaying = false;
     sendAck(&addr_Sender);
@@ -205,10 +205,10 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
 
     JumpPackage payloadTemp;
     memcpy(&payloadTemp, data, sizeof(payloadTemp));
-    printf("payload length: %u\n", payloadTemp.length);
-    printSender(payloadTemp);
-    printReceiver(payloadTemp);
-    printPayload(payloadTemp);
+    //printf("payload length: %u\n", payloadTemp.length);
+    //printSender(payloadTemp);
+    //printReceiver(payloadTemp);
+    //printPayload(payloadTemp);
     nullnet_buf = (uint8_t *)&payloadTemp;
     nullnet_len = sizeof(payloadTemp);
     
@@ -217,11 +217,11 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
     } else {
       sendNack(&addr_Sender);
     }
-    LOG_INFO("Message relayed\n");
+    //LOG_INFO("Message relayed\n");
     messageRelayed = true;
     isRelaying = true;
     isPinging = false;
-    printf("Received payload from Node A\n");
+    //printf("Received payload from Node A\n");
   }
 
 
@@ -254,15 +254,15 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
 
 
 void pinging(struct state * state) {
-  printf("%s \n", __func__);
+  //printf("%s \n", __func__);
   //nullnet_set_input_callback(input_callback);
   if(isRelaying ) {
-    state->timeoutCycles = 20;
+    state->timeoutCycles = 125;
     state->next = relaying;
   } else if(isPinging) {
     
     state->next = relaying;
-    state->timeoutCycles = 20;
+    state->timeoutCycles = 125;
   } 
   
   
@@ -271,8 +271,9 @@ void pinging(struct state * state) {
 
 
 void relaying(struct state * state) {
-  printf("%s \n", __func__);
-  printf("messagesrelayed: %i, ispinging: %i \n", messageRelayed, isPinging);
+  
+  //printf("%s \n", __func__);
+  //printf("messagesrelayed: %i, ispinging: %i \n", messageRelayed, isPinging);
   // nullnet_set_input_callback(ack_callback);
   //nullnet_set_input_callback(input_callback);
   /* if (isPinging) {
@@ -283,10 +284,10 @@ void relaying(struct state * state) {
   } else */ 
   if (isRelaying) {
     if(!messageRelayed) {
-      printf("not pinging and implies not messagesrelayed \n");
+      //printf("not pinging and implies not messagesrelayed \n");
       sendNack(&addr_Sender);
       isRelaying = false;
-      state->timeoutCycles = 20;
+      state->timeoutCycles = 125;
       etimer_set(&periodic_timer, state->timeoutCycles);
       state->next = pinging;
     } else {
@@ -298,7 +299,22 @@ void relaying(struct state * state) {
     }
     
   } else {
-      state->timeoutCycles = 20;
+    energest_flush();
+
+    printf("\nEnergest:\n");
+
+    printf("10ms *: CPU          %4lums LPM      %4lus DEEP LPM %4lums  Total time %lums\n",
+        to_10milseconds(energest_type_time(ENERGEST_TYPE_CPU)),
+        to_10milseconds(energest_type_time(ENERGEST_TYPE_LPM)),
+        to_10milseconds(energest_type_time(ENERGEST_TYPE_DEEP_LPM)),
+        to_10milseconds(ENERGEST_GET_TOTAL_TIME()));
+    printf("10ms *: Radio LISTEN %4lums TRANSMIT %4lums OFF      %4lums\n",
+        to_10milseconds(energest_type_time(ENERGEST_TYPE_LISTEN)),
+        to_10milseconds(energest_type_time(ENERGEST_TYPE_TRANSMIT)),
+        to_10milseconds(ENERGEST_GET_TOTAL_TIME()
+                  - energest_type_time(ENERGEST_TYPE_TRANSMIT)
+                  - energest_type_time(ENERGEST_TYPE_LISTEN)));
+      state->timeoutCycles = 125;
       etimer_set(&periodic_timer, state->timeoutCycles);
       state->next = pinging;
   }
@@ -312,11 +328,11 @@ void relaying(struct state * state) {
 
 void init(struct state * state)
 {
-    printf("%s \n", __func__);
+    //printf("%s \n", __func__);
 
     nullnet_set_input_callback(input_callback);
     
-    state->timeoutCycles = 20; 
+    state->timeoutCycles = 125; 
     state->timeoutCounter = 0;
     state->nackCounter = 0;
     isPinging = false;
@@ -347,28 +363,11 @@ PROCESS_THREAD(nodeB, ev, data)
         //nullnet_set_input_callback(input_callback);
 
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer)); 	// Wait until time is expired
-        if (state.next != NULL) // handle next state if not null
+        if (state.next != NULL) // handle next state if not null 
             state.next(&state);
 
             /* Update all energest times. */
-        energest_flush();
-
-        printf("\nEnergest:\n");
-        /* printf(" CPU          %" PRId64 " LPM      %" PRId64 " DEEP LPM   %" PRId64 " Total time %" PRId64 "\n", energest_type_time(ENERGEST_TYPE_CPU),
-           energest_type_time(ENERGEST_TYPE_LPM),
-           energest_type_time(ENERGEST_TYPE_DEEP_LPM),
-           ENERGEST_GET_TOTAL_TIME()); */
-        printf("10ms *: CPU          %4lums LPM      %4lus DEEP LPM %4lums  Total time %lums\n",
-           to_10milseconds(energest_type_time(ENERGEST_TYPE_CPU)),
-           to_10milseconds(energest_type_time(ENERGEST_TYPE_LPM)),
-           to_10milseconds(energest_type_time(ENERGEST_TYPE_DEEP_LPM)),
-           to_10milseconds(ENERGEST_GET_TOTAL_TIME()));
-        printf("10ms *: Radio LISTEN %4lums TRANSMIT %4lums OFF      %4lums\n",
-           to_10milseconds(energest_type_time(ENERGEST_TYPE_LISTEN)),
-           to_10milseconds(energest_type_time(ENERGEST_TYPE_TRANSMIT)),
-           to_10milseconds(ENERGEST_GET_TOTAL_TIME()
-                      - energest_type_time(ENERGEST_TYPE_TRANSMIT)
-                      - energest_type_time(ENERGEST_TYPE_LISTEN)));
+        
         etimer_reset(&periodic_timer);
     }
  

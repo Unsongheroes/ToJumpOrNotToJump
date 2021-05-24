@@ -71,7 +71,7 @@ AUTOSTART_PROCESSES(&nodeA);
 /* ----------------------------- Helper ----------------------------------- */
 static unsigned long to_10milseconds(uint64_t time)
 {
-  return (unsigned long)(time / 62,5 /*ENERGEST_SECOND*/);
+  return (unsigned long)(time / 62.5 );
 }
 
 
@@ -99,13 +99,13 @@ bool Radio_signal_strength( const linkaddr_t *src)
   static signed char rss;
   static signed char rss_val;
   static signed char rss_offset;
-  printf("Got message from: ");
-  LOG_INFO_LLADDR(src);
-  printf("\n");
+  //printf("Got message from: ");
+  //LOG_INFO_LLADDR(src);
+  //printf("\n");
   rss_val = cc2420_last_rssi;
   rss_offset=-45;
   rss=rss_val + rss_offset;
-  printf("RSSI of Last Packet Received is %d\n",rss);
+  //printf("RSSI of Last Packet Received is %d\n",rss);
   if(rss > RSSI_THRESHOLD && rss < 0) {
     return true;
   } else {
@@ -136,7 +136,7 @@ void sendPayload(linkaddr_t dest, int sequenceNumber) {
     if(payload.payload[i]==0) {
     break;
     }
-    LOG_INFO("Sent message %u \n ", payload.payload[i] );
+    //LOG_INFO("Sent message %u \n ", payload.payload[i] );
   }
 }
 
@@ -147,18 +147,18 @@ void transmitting_callback(const void *data, uint16_t len, const linkaddr_t *src
   if (ack == 1) {
     
       Acknowledged = true;
-      LOG_INFO("Acknowledged received from: ");
+      //LOG_INFO("Acknowledged received from: ");
       ackCounter++;
       counter++;
-      LOG_INFO_LLADDR(src);
-      LOG_INFO_("\n");
+      //LOG_INFO_LLADDR(src);
+      //LOG_INFO_("\n");
     } else if (ack == 255) {
       Notacknowledged = true;
       nackCounter++;
       counter++;
-      LOG_INFO("Not acknowledged received from: ");
-      LOG_INFO_LLADDR(src);
-      LOG_INFO_("\n");
+      //LOG_INFO("Not acknowledged received from: ");
+      //LOG_INFO_LLADDR(src);
+      //LOG_INFO_("\n");
     }
 }
 void pinging_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
@@ -174,13 +174,13 @@ void pinging_callback(const void *data, uint16_t len, const linkaddr_t *src, con
 }
 
 void transmitting(struct state * state) {
-  printf("%s \n", __func__);
-  printf("Acknowledged: %i counter: %i sequence number %i\n", Acknowledged, counter, state->sequenceNumber);
+  //printf("%s \n", __func__);
+  //printf("Acknowledged: %i counter: %i sequence number %i\n", Acknowledged, counter, state->sequenceNumber);
   nullnet_set_input_callback(transmitting_callback);
   if(Acknowledged) {
-    printf("Received acknowledge\n");
+    //printf("Received acknowledge\n");
     if(state->sequenceNumber == 3) {
-      printf("Sequence ended wait 10 sec.'\n");
+      //printf("Sequence ended wait 10 sec.'\n");
       state->timeoutCycles = 250;
       state->next = init;
     } else {
@@ -193,7 +193,7 @@ void transmitting(struct state * state) {
       etimer_set(&periodic_timer, state->timeoutCycles);
       state->next = transmitting;
     }
-    printf("Starting timer\n");
+    //printf("Starting timer\n");
     etimer_set(&periodic_timer, state->timeoutCycles);
   } else if (state->sequenceNumber == 1 && !state->transmitting) {
       state->transmitting = true;
@@ -212,10 +212,10 @@ void transmitting(struct state * state) {
         sendPayload(addr_nodeC,state->sequenceNumber);
       etimer_set(&periodic_timer, state->timeoutCycles);
       state->next = transmitting;
-      LOG_INFO("Timeout cycles: %i timeout counter: %i clock_time: %lu \n",state->timeoutCycles,state->timeoutCounter,clock_time());
+      //LOG_INFO("Timeout cycles: %i timeout counter: %i clock_time: %lu \n",state->timeoutCycles,state->timeoutCounter,clock_time());
   } else if (state->nackCounter < NACK_COUNTER_LIMIT && Notacknowledged) {
       state->nackCounter++;
-      LOG_INFO("nack counter: %i clock_time: %lu \n",state->nackCounter,clock_time());
+      //LOG_INFO("nack counter: %i clock_time: %lu \n",state->nackCounter,clock_time());
       
       Notacknowledged = false;
       if (state->relaying) 
@@ -227,7 +227,7 @@ void transmitting(struct state * state) {
       etimer_set(&periodic_timer, state->timeoutCycles);
       
   } else {
-    LOG_INFO("Timeout or nack limit reached go ping. Relaying: %d\n",state->relaying);
+    //LOG_INFO("Timeout or nack limit reached go ping. Relaying: %d\n",state->relaying);
     Acknowledged = false;
     Notacknowledged = false;
     state->relaying = !state->relaying;
@@ -242,10 +242,10 @@ void transmitting(struct state * state) {
 }
 
 void pinging(struct state * state) {
- printf("%s \n", __func__);
+ //printf("%s \n", __func__);
 
  if (Pinging == 2) {
-    printf("Setting next state to transmtting \n");
+    //printf("Setting next state to transmtting \n");
     state->next = transmitting;
     state->transmitting = false;
     state->timeoutCounter = 0;
@@ -259,7 +259,7 @@ void pinging(struct state * state) {
     nullnet_len = sizeof(payloadData);
     nullnet_set_input_callback(pinging_callback);
     if (state->relaying) {
-      printf("data: %u \n", *nullnet_buf);
+      //printf("data: %u \n", *nullnet_buf);
       NETSTACK_NETWORK.output(&addr_nodeB);
     }
     else 
@@ -274,7 +274,7 @@ void pinging(struct state * state) {
     nullnet_len = sizeof(payloadData);
     nullnet_set_input_callback(pinging_callback);
     if (state->relaying) {
-      printf("data: %u \n", *nullnet_buf);
+      //printf("data: %u \n", *nullnet_buf);
       NETSTACK_NETWORK.output(&addr_nodeB);
     }
     else 
@@ -282,12 +282,14 @@ void pinging(struct state * state) {
     
     etimer_set(&periodic_timer, state->timeoutCycles);
     state->next = pinging;
-    LOG_INFO("Timeout cycles: %i timeout counter: %i clock_time: %lu relaying: %d \n",state->timeoutCycles,state->timeoutCounter,clock_time(),state->relaying);
+    //LOG_INFO("Timeout cycles: %i timeout counter: %i clock_time: %lu relaying: %d \n",state->timeoutCycles,state->timeoutCounter,clock_time(),state->relaying);
   } else {
     state->timeoutCounter = 0;
     if(state->relaying == true) {
       state->timeoutCycles = 250;
       state->next = init;
+      nackCounter++;
+      counter++;
     } else {
       state->timeoutCycles = INITIAL_TIMEOUT;
       state->next = pinging;
@@ -296,12 +298,12 @@ void pinging(struct state * state) {
     }
     
     etimer_set(&periodic_timer, state->timeoutCycles);
-    LOG_INFO("Timeout counter limit reached...\n");
+    //LOG_INFO("Timeout counter limit reached...\n");
   }
 }
 void init(struct state * state)
 {
-    printf("%s \n", __func__);
+    //printf("%s \n", __func__);
     
     state->timeoutCycles = INITIAL_TIMEOUT; 
     state->timeoutCounter = 0;
@@ -330,22 +332,9 @@ PROCESS_THREAD(nodeA, ev, data)
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer)); 	// Wait until time is expired
         if (state.next != NULL) // handle next state if not null
             state.next(&state);
-        LOG_INFO("Nack received: %i  Ack received: %i\n", nackCounter, ackCounter);
+        //LOG_INFO("Nack received: %i  Ack received: %i\n", nackCounter, ackCounter);
          /* Update all energest times. */
-        energest_flush();
-
-        printf("\nEnergest:\n");
-        printf(" CPU          %4lus LPM      %4lus DEEP LPM %4lus  Total time %lus\n",
-           to_10milseconds(energest_type_time(ENERGEST_TYPE_CPU)),
-           to_10milseconds(energest_type_time(ENERGEST_TYPE_LPM)),
-           to_10milseconds(energest_type_time(ENERGEST_TYPE_DEEP_LPM)),
-           to_10milseconds(ENERGEST_GET_TOTAL_TIME()));
-        printf(" Radio LISTEN %4lus TRANSMIT %4lus OFF      %4lus\n",
-           to_10milseconds(energest_type_time(ENERGEST_TYPE_LISTEN)),
-           to_10milseconds(energest_type_time(ENERGEST_TYPE_TRANSMIT)),
-           to_10milseconds(ENERGEST_GET_TOTAL_TIME()
-                      - energest_type_time(ENERGEST_TYPE_TRANSMIT)
-                      - energest_type_time(ENERGEST_TYPE_LISTEN)));
+        
         //etimer_reset(&periodic_timer);
        /*  if (timeoutCounter < TIMEOUT_COUNTER_LIMIT) {
           timeoutCycles = timeoutCycles * 2;
@@ -378,6 +367,21 @@ PROCESS_THREAD(nodeA, ev, data)
           Acknowledged = 0;
         } */
     }
+    energest_flush();
+
+    printf("\nEnergest:\n");
+    printf(" CPU          %4lus LPM      %4lus DEEP LPM %4lus  Total time %lus\n",
+        to_10milseconds(energest_type_time(ENERGEST_TYPE_CPU)),
+        to_10milseconds(energest_type_time(ENERGEST_TYPE_LPM)),
+        to_10milseconds(energest_type_time(ENERGEST_TYPE_DEEP_LPM)),
+        to_10milseconds(ENERGEST_GET_TOTAL_TIME()));
+    printf(" Radio LISTEN %4lus TRANSMIT %4lus OFF      %4lus\n",
+        to_10milseconds(energest_type_time(ENERGEST_TYPE_LISTEN)),
+        to_10milseconds(energest_type_time(ENERGEST_TYPE_TRANSMIT)),
+        to_10milseconds(ENERGEST_GET_TOTAL_TIME()
+                  - energest_type_time(ENERGEST_TYPE_TRANSMIT)
+                  - energest_type_time(ENERGEST_TYPE_LISTEN)));
+  LOG_INFO("Nack received: %i  Ack received: %i\n", nackCounter, ackCounter);
   LOG_INFO("Nack received: %i  Ack received: %i\n", nackCounter, ackCounter);
   PROCESS_END();
 }
