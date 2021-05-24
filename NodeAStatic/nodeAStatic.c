@@ -58,7 +58,7 @@ void sendPayload(){
       if(payload.payload[i]==0) {
       break;
     }
-    LOG_INFO("Sent message %u \n ", payload.payload[i] );
+    //LOG_INFO("Sent message %u \n ", payload.payload[i] );
   }
 }
 
@@ -67,14 +67,14 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
     uint8_t ack;
     memcpy(&ack, data, sizeof(ack));
     if (ack == 1) {
-      LOG_INFO("Acknowledged received from: ");
+     /*  LOG_INFO("Acknowledged received from: ");
       LOG_INFO_LLADDR(src);
-      LOG_INFO_("\n");
+      LOG_INFO_("\n"); */
       ACK_n++;
     } else if (ack == 255) {
-      LOG_INFO("Not acknowledged received from: ");
+      /* LOG_INFO("Not acknowledged received from: ");
       LOG_INFO_LLADDR(src);
-      LOG_INFO_("\n");
+      LOG_INFO_("\n"); */
     }
 }
 

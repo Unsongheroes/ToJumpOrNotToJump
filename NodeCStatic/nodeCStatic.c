@@ -32,31 +32,31 @@ int checksum(uint8_t* buffer, size_t len)
 }
 
 bool checkChecksum(JumpPackage payload){
-  LOG_INFO("Checking checksum: %i\n",payload.checksum );
+  //LOG_INFO("Checking checksum: %i\n",payload.checksum );
   int pchecksum = checksum(payload.payload, payload.length);
   if(pchecksum == payload.checksum){
-    printf("Checksum correct\n");
+    //printf("Checksum correct\n");
     return true;
   }
   else{
-    printf("Checksum did not match payload\n");
+    //printf("Checksum did not match payload\n");
     return false;
   }
 }
 
 void printSender(JumpPackage payload ) {
-  LOG_INFO("Sender: " );
+  /* LOG_INFO("Sender: " ); */
   linkaddr_t* sender = &payload.sender;
-  LOG_INFO_LLADDR(sender);
-  LOG_INFO("\n " );
+  /* LOG_INFO_LLADDR(sender);
+  LOG_INFO("\n " ); */
   
 }
 
 void printReceiver(JumpPackage payload ) {
-  LOG_INFO("Destination: " );
+  /* LOG_INFO("Destination: " ); */
   linkaddr_t* destination = &payload.destination;
-  LOG_INFO_LLADDR(destination);
-  LOG_INFO("\n " );
+  /* LOG_INFO_LLADDR(destination);
+  LOG_INFO("\n " ); */
   
 }
 
@@ -67,7 +67,7 @@ void printPayload(JumpPackage payload) {
     if (payload.payload[i] ==0) {
       break;
     }
-      LOG_INFO("Received message %u \n", payload.payload[i] );
+      //LOG_INFO("Received message %u \n", payload.payload[i] );
   }
 }
 
@@ -75,12 +75,12 @@ void sendAck(const linkaddr_t *src) {
   uint8_t acknowledge = 1;
   nullnet_buf = (uint8_t *)&acknowledge;
   nullnet_len = sizeof(acknowledge);
-  LOG_INFO("\n");
+  /* LOG_INFO("\n");
   LOG_INFO_LLADDR(src);
-  LOG_INFO("\n");
+  LOG_INFO("\n"); */
   linkaddr_t tmp = *src;
   NETSTACK_NETWORK.output(&tmp);
-  LOG_INFO("Acknowledge sent!\n");
+  //LOG_INFO("Acknowledge sent!\n");
 }
 
 void sendNack(const linkaddr_t *src) {
@@ -89,7 +89,7 @@ void sendNack(const linkaddr_t *src) {
   nullnet_len = sizeof(acknowledge);
   linkaddr_t tmp = *src;
   NETSTACK_NETWORK.output(&tmp);
-  LOG_INFO("Not acknowledge sent!\n");
+  //LOG_INFO("Not acknowledge sent!\n");
 }
 
 
@@ -98,9 +98,9 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
     memcpy(&payload, data, sizeof(payload));
     nullnet_buf = (uint8_t *)&payload;
     nullnet_len = sizeof(payload);
-    printSender(payload);
+ /*    printSender(payload);
     printReceiver(payload);
-    printPayload(payload);
+    printPayload(payload); */
     if (checkChecksum(payload)) {
       sendAck(src);
     }
@@ -114,7 +114,7 @@ AUTOSTART_PROCESSES(&nodeC);
 
 PROCESS_THREAD(nodeC, ev, data)
 {
-  static struct etimer periodic_timer;
+  // static struct etimer periodic_timer;
     PROCESS_BEGIN();
     
     printf("STARTING NODE C,,, \n");
@@ -122,10 +122,11 @@ PROCESS_THREAD(nodeC, ev, data)
        
 
     SENSORS_ACTIVATE(button_sensor);
-    etimer_set(&periodic_timer, CLOCK_SECOND * 10);
+    // etimer_set(&periodic_timer, CLOCK_SECOND * 10);
     while (1){
-      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-    etimer_reset(&periodic_timer);
+      // PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
+      PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
+    // etimer_reset(&periodic_timer);
       /* Update all energest times. */
         energest_flush();
 
