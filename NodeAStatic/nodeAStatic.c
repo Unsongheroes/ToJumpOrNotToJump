@@ -17,11 +17,11 @@
 int ACK_n = 0;
 
 static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
-// static linkaddr_t addr_nodeC = {{0x03, 0x03, 0x03, 0x00, 0x03, 0x74, 0x12, 0x00}}; // coojas
+ //static linkaddr_t addr_nodeC = {{0x03, 0x03, 0x03, 0x00, 0x03, 0x74, 0x12, 0x00}}; // coojas
 
 static unsigned long to_10milseconds(uint64_t time)
 {
-  return (unsigned long)(time / 625 /*ENERGEST_SECOND*/);
+  return (unsigned long)(time / 62.5 /*ENERGEST_SECOND*/);
 }
 
 
@@ -91,14 +91,22 @@ PROCESS_THREAD(nodeA, ev, data)
     etimer_set(&periodic_timer, 250);
     SENSORS_ACTIVATE(button_sensor);
     
-    while(1){
-        if (index < 100) {
-          sendPayload();
-          index++;
-        }
+    while(index < 100){
+
+        sendPayload();
+        index++;
         
+
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-        printf("Number of ACKs received: %i", ACK_n);
+        
+        etimer_reset(&periodic_timer);
+
+
+
+
+    }
+
+    printf("Number of ACKs received: %i", ACK_n);
           /* Update all energest times. */
         energest_flush();
 
@@ -118,12 +126,6 @@ PROCESS_THREAD(nodeA, ev, data)
            to_10milseconds(ENERGEST_GET_TOTAL_TIME()
                       - energest_type_time(ENERGEST_TYPE_TRANSMIT)
                       - energest_type_time(ENERGEST_TYPE_LISTEN)));
-        etimer_reset(&periodic_timer);
-
-
-
-
-
-    }
+        
     PROCESS_END();
 }

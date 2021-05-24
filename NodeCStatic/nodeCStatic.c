@@ -17,7 +17,7 @@
 
 static unsigned long to_10milseconds(uint64_t time)
 {
-  return (unsigned long)(time / 625 /*ENERGEST_SECOND*/);
+  return (unsigned long)(time / 62.5 /*ENERGEST_SECOND*/);
 }
 
 int checksum(uint8_t* buffer, size_t len)
@@ -45,18 +45,18 @@ bool checkChecksum(JumpPackage payload){
 }
 
 void printSender(JumpPackage payload ) {
-  /* LOG_INFO("Sender: " ); */
+  LOG_INFO("Sender: " );
   linkaddr_t* sender = &payload.sender;
-  /* LOG_INFO_LLADDR(sender);
-  LOG_INFO("\n " ); */
+  LOG_INFO_LLADDR(sender);
+  LOG_INFO("\n " );
   
 }
 
 void printReceiver(JumpPackage payload ) {
-  /* LOG_INFO("Destination: " ); */
+  LOG_INFO("Destination: " );
   linkaddr_t* destination = &payload.destination;
-  /* LOG_INFO_LLADDR(destination);
-  LOG_INFO("\n " ); */
+  LOG_INFO_LLADDR(destination);
+  LOG_INFO("\n " );
   
 }
 
