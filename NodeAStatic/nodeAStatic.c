@@ -88,7 +88,7 @@ PROCESS_THREAD(nodeA, ev, data)
     static int index = 0;
     printf("STARTING NODE A,,, \n"); 
     nullnet_set_input_callback(input_callback);
-    etimer_set(&periodic_timer, 1250);
+    etimer_set(&periodic_timer, 250);
     SENSORS_ACTIVATE(button_sensor);
     
     while(1){

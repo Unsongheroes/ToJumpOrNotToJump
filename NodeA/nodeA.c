@@ -181,7 +181,7 @@ void transmitting(struct state * state) {
     printf("Received acknowledge\n");
     if(state->sequenceNumber == 3) {
       printf("Sequence ended wait 10 sec.'\n");
-      state->timeoutCycles = 1250;
+      state->timeoutCycles = 250;
       state->next = init;
     } else {
       Acknowledged = false;
@@ -286,7 +286,7 @@ void pinging(struct state * state) {
   } else {
     state->timeoutCounter = 0;
     if(state->relaying == true) {
-      state->timeoutCycles = 1250;
+      state->timeoutCycles = 250;
       state->next = init;
     } else {
       state->timeoutCycles = INITIAL_TIMEOUT;
