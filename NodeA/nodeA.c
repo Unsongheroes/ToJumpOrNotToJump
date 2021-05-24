@@ -330,7 +330,7 @@ PROCESS_THREAD(nodeA, ev, data)
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer)); 	// Wait until time is expired
         if (state.next != NULL) // handle next state if not null
             state.next(&state);
-
+        LOG_INFO("Nack received: %i  Ack received: %i\n", nackCounter, ackCounter);
          /* Update all energest times. */
         /* energest_flush();
 
@@ -378,7 +378,7 @@ PROCESS_THREAD(nodeA, ev, data)
           Acknowledged = 0;
         } */
     }
-  LOG_INFO("Nack received: %i  Ack received: %i", nackCounter, ackCounter);
+  LOG_INFO("Nack received: %i  Ack received: %i\n", nackCounter, ackCounter);
   PROCESS_END();
 }
 
