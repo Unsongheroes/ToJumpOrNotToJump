@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include "sys/energest.h"
 /* Log configuration */
 #include "sys/log.h"
 #define LOG_MODULE "App"
@@ -17,8 +17,8 @@
 #define SEND_INTERVAL (8 * CLOCK_SECOND)
 #define TIMEOUTLIMIT 60
 //static linkaddr_t addr_nodeB =     {{0x77, 0xb7, 0x7b, 0x11, 0x0, 0x74, 0x12, 0x00 }};
-//static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
-static linkaddr_t addr_nodeC = {{0x03, 0x03, 0x03, 0x00, 0x03, 0x74, 0x12, 0x00}}; // cooja
+static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
+//static linkaddr_t addr_nodeC = {{0x03, 0x03, 0x03, 0x00, 0x03, 0x74, 0x12, 0x00}}; // cooja
 //static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
 static linkaddr_t addr_Sender;
 //static clock_time_t timelimit = 0;
@@ -48,6 +48,10 @@ state_fn init,pinging, relaying; //the different states for the mote
 PROCESS(nodeB, "Node B - Sender");
 AUTOSTART_PROCESSES(&nodeB);
 /* ----------------------------- Helper ----------------------------------- */
+static unsigned long to_10milseconds(uint64_t time)
+{
+  return (unsigned long)(time / 625 /*ENERGEST_SECOND*/);
+}
 bool errorOrNot() {
   int r = rand() % 10;
   if (r > 10) {
@@ -345,6 +349,27 @@ PROCESS_THREAD(nodeB, ev, data)
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer)); 	// Wait until time is expired
         if (state.next != NULL) // handle next state if not null
             state.next(&state);
+
+            /* Update all energest times. */
+        energest_flush();
+
+        printf("\nEnergest:\n");
+        /* printf(" CPU          %" PRId64 " LPM      %" PRId64 " DEEP LPM   %" PRId64 " Total time %" PRId64 "\n", energest_type_time(ENERGEST_TYPE_CPU),
+           energest_type_time(ENERGEST_TYPE_LPM),
+           energest_type_time(ENERGEST_TYPE_DEEP_LPM),
+           ENERGEST_GET_TOTAL_TIME()); */
+        printf("10ms *: CPU          %4lums LPM      %4lus DEEP LPM %4lums  Total time %lums\n",
+           to_10milseconds(energest_type_time(ENERGEST_TYPE_CPU)),
+           to_10milseconds(energest_type_time(ENERGEST_TYPE_LPM)),
+           to_10milseconds(energest_type_time(ENERGEST_TYPE_DEEP_LPM)),
+           to_10milseconds(ENERGEST_GET_TOTAL_TIME()));
+        printf("10ms *: Radio LISTEN %4lums TRANSMIT %4lums OFF      %4lums\n",
+           to_10milseconds(energest_type_time(ENERGEST_TYPE_LISTEN)),
+           to_10milseconds(energest_type_time(ENERGEST_TYPE_TRANSMIT)),
+           to_10milseconds(ENERGEST_GET_TOTAL_TIME()
+                      - energest_type_time(ENERGEST_TYPE_TRANSMIT)
+                      - energest_type_time(ENERGEST_TYPE_LISTEN)));
+        etimer_reset(&periodic_timer);
     }
  
   PROCESS_END();
