@@ -52,7 +52,7 @@ bool errorOrNot() { // introduction of a error probability of 50 %
   }
 }
 
-bool checkChecksum(JumpPackage payload){ // function to determine if the received checksum matach the calculated checksum
+bool checkChecksum(JumpPackage payload){ // function to determine if the received checksum match the calculated checksum
   //LOG_INFO("Checking checksum: %i\n",payload.checksum );
   uint8_t pchecksum = checksum(payload.payload, payload.length);
   if(pchecksum == payload.checksum){

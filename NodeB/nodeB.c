@@ -67,7 +67,7 @@ uint8_t checksum(uint8_t* buffer, uint8_t len) // function to calculate a naive 
       return checksum;
 }
 
-bool checkChecksum(JumpPackage payload){ // function to determine if the received checksum matach the calculated checksum
+bool checkChecksum(JumpPackage payload){ // function to determine if the received checksum match the calculated checksum
   //LOG_INFO("Checking checksum: %i\n",payload.checksum );
     uint8_t pchecksum = checksum(payload.payload, payload.length);
     if(pchecksum == payload.checksum){
@@ -212,7 +212,7 @@ void relaying(struct state * state) { // relaying state
 
   if (isRelaying) { // if relaying
     if(!messageRelayed) { // if a message has not been relayed
-      //printf("not pinging and implies not messagesrelayed \n");
+      //printf("not pinging implies not messagesrelayed \n");
       sendNack(&addr_Sender);
       isRelaying = false;
       state->timeoutCycles = 125;
