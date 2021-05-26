@@ -21,7 +21,7 @@
 
 /* ----------------------------- Defines ----------------------------------- */
 
-#define RSSI_THRESHOLD -110
+#define RSSI_THRESHOLD -120
 #define NACK_COUNTER_LIMIT 3
 #define TIMEOUT_COUNTER_LIMIT 3
 #define INITIAL_TIMEOUT 30
