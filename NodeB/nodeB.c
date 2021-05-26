@@ -18,9 +18,9 @@
 //static linkaddr_t addr_nodeC =     {{0x77, 0xb7, 0x7b, 0x11, 0x0, 0x74, 0x12, 0x00 }};
 static linkaddr_t addr_nodeC = {{0x03, 0x03, 0x03, 0x00, 0x03, 0x74, 0x12, 0x00}}; // cooja
 static linkaddr_t addr_Sender;
-static bool isPinging = false;
-static bool messageRelayed = false;
-static bool isRelaying = false;
+static bool isPinging = false; // variable indicating if node B is pinged
+static bool messageRelayed = false; // variable indicating if a message have been relayed
+static bool isRelaying = false; // variable indicating if node B is relaying
 static struct etimer periodic_timer;
 /* -----------------------------         ----------------------------------- */
 // State machine setup
