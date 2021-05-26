@@ -24,10 +24,10 @@ static unsigned long to_10milseconds(uint64_t time)
 {
   return (unsigned long)(time / 62.5 );
 }
-int checksum(uint8_t* buffer, size_t len)
+uint8_t checksum(uint8_t* buffer, uint8_t len)
 {
       size_t i;
-      int checksum = 0;
+      uint8_t checksum = 0;
       /*
       linkaddr_t* sender = &buffer.sender;
       linkaddr_t* destination = &buffer.destination;
@@ -54,7 +54,7 @@ bool errorOrNot() {
 
 bool checkChecksum(JumpPackage payload){
   //LOG_INFO("Checking checksum: %i\n",payload.checksum );
-  int pchecksum = checksum(payload.payload, payload.length);
+  uint8_t pchecksum = checksum(payload.payload, payload.length);
   if(pchecksum == payload.checksum){
     //printf("Checksum correct\n");
     return true;

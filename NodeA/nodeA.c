@@ -25,18 +25,12 @@
 #define NACK_COUNTER_LIMIT 3
 #define TIMEOUT_COUNTER_LIMIT 3
 #define INITIAL_TIMEOUT 30
-static linkaddr_t addr_nodeB =     {{0xe3, 0xfd, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
-
-static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
-
-// static linkaddr_t addr_wrong =     {{0x44, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
-//static linkaddr_t addr_broadCast = {{0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0}};
+//static linkaddr_t addr_nodeB =     {{0xe3, 0xfd, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 
 //static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
 
-//static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
-//static linkaddr_t addr_nodeB = {{0x02, 0x02, 0x02, 0x00, 0x02, 0x74, 0x12, 0x00}}; // cooja
-//static linkaddr_t addr_nodeC = {{0x03, 0x03, 0x03, 0x00, 0x03, 0x74, 0x12, 0x00}}; // cooja
+static linkaddr_t addr_nodeB = {{0x02, 0x02, 0x02, 0x00, 0x02, 0x74, 0x12, 0x00}}; // cooja
+static linkaddr_t addr_nodeC = {{0x03, 0x03, 0x03, 0x00, 0x03, 0x74, 0x12, 0x00}}; // cooja
 //static int timeoutCycles = 10;  // 20 clockcycles = 20/125 =0.16
 //static int nackCounter = 0;
 static bool Acknowledged = false;
@@ -75,10 +69,10 @@ static unsigned long to_10milseconds(uint64_t time)
 }
 
 
-int checksum(uint8_t* buffer, size_t len)
+uint8_t checksum(uint8_t* buffer, uint8_t len)
 {
       size_t i;
-      int checksum = 0;
+      uint8_t checksum = 0;
       /*
       linkaddr_t* sender = &buffer.sender;
       linkaddr_t* destination = &buffer.destination;
@@ -328,44 +322,10 @@ PROCESS_THREAD(nodeA, ev, data)
     SENSORS_ACTIVATE(button_sensor);
     while (counter < 100)
     {
-//        nullnet_set_input_callback(input_callback);
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer)); 	// Wait until time is expired
         if (state.next != NULL) // handle next state if not null
             state.next(&state);
-        //LOG_INFO("Nack received: %i  Ack received: %i\n", nackCounter, ackCounter);
-         /* Update all energest times. */
-        
-        //etimer_reset(&periodic_timer);
-       /*  if (timeoutCounter < TIMEOUT_COUNTER_LIMIT) {
-          timeoutCycles = timeoutCycles * 2;
-          timeoutCounter++;
-          etimer_set(&periodic_timer, timeoutCycles);
-          LOG_INFO("Timeout cycles: %i timeout counter: %i clock_time: %lu \n",timeoutCycles,timeoutCounter,clock_time());
-        } else {
-          LOG_INFO("Timeout counter limit reached...\n");
-          PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
-        }
-        
 
-
-        if (Pinging) {
-          uint8_t payloadData = 1;
-          nullnet_buf = (uint8_t *)&payloadData;
-
-          nullnet_len = sizeof(payloadData);
-          nullnet_set_input_callback(input_callback);
-
-
-          NETSTACK_NETWORK.output(&addr_nodeC);
-
-        } else if(!Acknowledged ) {
-            sendPayload(addr_nodeC);
-        }  else {
-
-          LOG_INFO("Message delivered!\n");
-          PROCESS_WAIT_EVENT_UNTIL(ev == sensors_event && data == &button_sensor);
-          Acknowledged = 0;
-        } */
     }
     energest_flush();
 

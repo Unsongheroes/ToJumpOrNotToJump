@@ -25,10 +25,10 @@ static unsigned long to_10milseconds(uint64_t time)
 }
 
 
-int checksum(uint8_t* buffer, size_t len)
+uint8_t checksum(uint8_t* buffer, uint8_t len)
 {
       size_t i;
-      int checksum = 0;
+      uint8_t checksum = 0;
       for (i = 0; i < len; ++i) {
         checksum += buffer[i];
       }
@@ -111,10 +111,6 @@ PROCESS_THREAD(nodeA, ev, data)
         energest_flush();
 
         printf("\nEnergest:\n");
-        /* printf(" CPU          %" PRId64 " LPM      %" PRId64 " DEEP LPM   %" PRId64 " Total time %" PRId64 "\n", energest_type_time(ENERGEST_TYPE_CPU),
-           energest_type_time(ENERGEST_TYPE_LPM),
-           energest_type_time(ENERGEST_TYPE_DEEP_LPM),
-           ENERGEST_GET_TOTAL_TIME()); */
         printf("10ms *: CPU          %4lums LPM      %4lus DEEP LPM %4lums  Total time %lums\n",
            to_10milseconds(energest_type_time(ENERGEST_TYPE_CPU)),
            to_10milseconds(energest_type_time(ENERGEST_TYPE_LPM)),

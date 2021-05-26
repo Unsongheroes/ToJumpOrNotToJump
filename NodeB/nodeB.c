@@ -15,16 +15,12 @@
 #define LOG_LEVEL LOG_LEVEL_INFO
 /* ----------------------------- Defines ----------------------------------- */
 #define TIMEOUTLIMIT 60
-//static linkaddr_t addr_nodeB =     {{0x77, 0xb7, 0x7b, 0x11, 0x0, 0x74, 0x12, 0x00 }};
-static linkaddr_t addr_nodeC =     {{0x43, 0xf5, 0x6e, 0x14, 0x00, 0x74, 0x12, 0x00}};
-//static linkaddr_t addr_nodeC = {{0x03, 0x03, 0x03, 0x00, 0x03, 0x74, 0x12, 0x00}}; // cooja
-//static linkaddr_t addr_nodeA =     {{0x77, 0xb7, 0x7b, 0x11, 0x00, 0x74, 0x12, 0x00}};
+//static linkaddr_t addr_nodeC =     {{0x77, 0xb7, 0x7b, 0x11, 0x0, 0x74, 0x12, 0x00 }};
+static linkaddr_t addr_nodeC = {{0x03, 0x03, 0x03, 0x00, 0x03, 0x74, 0x12, 0x00}}; // cooja
 static linkaddr_t addr_Sender;
-//static clock_time_t timelimit = 0;
 static bool isPinging = false;
 static bool messageRelayed = false;
 static bool isRelaying = false;
-// static bool isRelaying = false; (kristoffers)
 static struct etimer periodic_timer;
 /* -----------------------------         ----------------------------------- */
 // State machine setup
@@ -60,10 +56,10 @@ bool errorOrNot() {
   }
 }
 
-int checksum(uint8_t* buffer, size_t len)
+uint8_t checksum(uint8_t* buffer, uint8_t len)
 {
       size_t i;
-      int checksum = 0;
+      uint8_t checksum = 0;
       /*
       linkaddr_t* sender = &buffer.sender;
       linkaddr_t* destination = &buffer.destination;
@@ -81,7 +77,7 @@ int checksum(uint8_t* buffer, size_t len)
 
 bool checkChecksum(JumpPackage payload){
   //LOG_INFO("Checking checksum: %i\n",payload.checksum );
-    int pchecksum = checksum(payload.payload, payload.length);
+    uint8_t pchecksum = checksum(payload.payload, payload.length);
     if(pchecksum == payload.checksum){
       //printf("Checksum correct\n");
       return true;
@@ -145,30 +141,7 @@ void sendNack(const linkaddr_t *src) {
   //LOG_INFO("\n " );
 }
 
-/* ----------------------------- Callbacks ----------------------------------- */
-/* void ack_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest) {
-  printf("ack_callback called\n");
-  if (memcmp(src, &addr_Sender,8) == 0) {
-    return;
-  }
-  uint8_t ack;
-  memcpy(&ack, data, sizeof(ack));
-  
-  if (ack == 1) {
-    
-    LOG_INFO("Acknowledged received from: ");
-    LOG_INFO_LLADDR(src);
-    LOG_INFO_("\n");
-    
-    sendAck(&addr_Sender);
-  } else if(ack == 255) {
-    LOG_INFO("Not acknowledged received from: ");
-    LOG_INFO_LLADDR(src);
-    LOG_INFO_("\n");
-    
-    sendNack(&addr_Sender);
-  }
-} */
+
 
 void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest)
 {
@@ -223,64 +196,28 @@ void input_callback(const void *data, uint16_t len, const linkaddr_t *src, const
     //printf("Received payload from Node A\n");
   }
 
-
-/*   if(acknowlegde) {
-    printSender(payload);
-    printReceiver(payload);
-    printPayload(payload);
-    
-  }
-  */
-
-/*   if (payload.length > 0) { //received payload
-      // if(errorOrNot()) {
-      //  sendNack(&addr_Sender);
-      // }
-      printSender(payload);
-      printReceiver(payload);
-      printPayload(payload);
-    if(!checkChecksum(payload)){
-      sendNack(&addr_Sender);
-    } else {
-      NETSTACK_NETWORK.output(&addr_nodeC);
-
-      nullnet_set_input_callback(ack_callback);
-    }
-  } else { // received ping
-    sendAck(&addr_Sender);
-  } */
 }
 
 
 void pinging(struct state * state) {
   //printf("%s \n", __func__);
-  //nullnet_set_input_callback(input_callback);
-  if(isRelaying ) {
+  if(isRelaying) {
     state->timeoutCycles = 125;
     state->next = relaying;
   } else if(isPinging) {
-    
     state->next = relaying;
     state->timeoutCycles = 125;
-  } 
-  
-  
+  } /* else {
+    state->next = pinging;
+    state->timeoutCycles = 125;
+  } */
+
   etimer_set(&periodic_timer, state->timeoutCycles);
 }
 
 
 void relaying(struct state * state) {
-  
-  //printf("%s \n", __func__);
-  //printf("messagesrelayed: %i, ispinging: %i \n", messageRelayed, isPinging);
-  // nullnet_set_input_callback(ack_callback);
-  //nullnet_set_input_callback(input_callback);
-  /* if (isPinging) {
-    isPinging = false;
-    state->next = relaying;
-    state->timeoutCycles = 20;
-    etimer_set(&periodic_timer, state->timeoutCycles);
-  } else */ 
+
   if (isRelaying) {
     if(!messageRelayed) {
       //printf("not pinging and implies not messagesrelayed \n");
