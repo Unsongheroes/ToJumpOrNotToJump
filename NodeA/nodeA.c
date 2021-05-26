@@ -57,7 +57,7 @@ state_fn init, pinging, transmitting; //the different states for the mote
 PROCESS(nodeA, "Node A - Sender");
 AUTOSTART_PROCESSES(&nodeA);
 /* ----------------------------- Helper ----------------------------------- */
-static unsigned long to_10milseconds(uint64_t time)
+static unsigned long to_milliseconds(uint64_t time) // helper function to calcule energest values to milliseconds
 {
   return (unsigned long)(time / 62.5 );
 }
@@ -305,14 +305,14 @@ PROCESS_THREAD(nodeA, ev, data)
 
     printf("\nEnergest:\n");
     printf(" CPU          %4lus LPM      %4lus DEEP LPM %4lus  Total time %lus\n",
-        to_10milseconds(energest_type_time(ENERGEST_TYPE_CPU)),
-        to_10milseconds(energest_type_time(ENERGEST_TYPE_LPM)),
-        to_10milseconds(energest_type_time(ENERGEST_TYPE_DEEP_LPM)),
-        to_10milseconds(ENERGEST_GET_TOTAL_TIME()));
+        to_milliseconds(energest_type_time(ENERGEST_TYPE_CPU)),
+        to_milliseconds(energest_type_time(ENERGEST_TYPE_LPM)),
+        to_milliseconds(energest_type_time(ENERGEST_TYPE_DEEP_LPM)),
+        to_milliseconds(ENERGEST_GET_TOTAL_TIME()));
     printf(" Radio LISTEN %4lus TRANSMIT %4lus OFF      %4lus\n",
-        to_10milseconds(energest_type_time(ENERGEST_TYPE_LISTEN)),
-        to_10milseconds(energest_type_time(ENERGEST_TYPE_TRANSMIT)),
-        to_10milseconds(ENERGEST_GET_TOTAL_TIME()
+        to_milliseconds(energest_type_time(ENERGEST_TYPE_LISTEN)),
+        to_milliseconds(energest_type_time(ENERGEST_TYPE_TRANSMIT)),
+        to_milliseconds(ENERGEST_GET_TOTAL_TIME()
                   - energest_type_time(ENERGEST_TYPE_TRANSMIT)
                   - energest_type_time(ENERGEST_TYPE_LISTEN)));
   LOG_INFO("Nack received: %i  Ack received: %i\n", nackCounter, ackCounter);
