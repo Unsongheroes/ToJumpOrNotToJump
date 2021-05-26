@@ -22,7 +22,7 @@ static linkaddr_t addr_nodeC =     {{0x77, 0xb7, 0x7b, 0x11, 0x0, 0x74, 0x12, 0x
 
 static unsigned long to_milliseconds(uint64_t time)  // helper function to calcule energest values to milliseconds
 {
-  return (unsigned long)(time / 62.5 /*ENERGEST_SECOND*/);
+  return (unsigned long)(time / 62.5 );
 }
 
 
